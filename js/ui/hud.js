@@ -3,7 +3,7 @@ import { h, $, clear } from './dom.js';
 import { POWERS, DIR_MODES } from '../powers/powers.js';
 import { settings, keyLabel } from '../core/settings.js';
 import { fmtG, escapeHtml } from '../util.js';
-import { MAX_OBJECTS } from '../config.js';
+import { MAX_OBJECTS, PUBLIC_URL } from '../config.js';
 
 /** In-game heads-up display. */
 export class Hud {
@@ -161,7 +161,7 @@ export class Hud {
     clear(this.playersList).append(
       h('h4', game.net ? `Room ${game.net.code}` : 'Singleplayer'),
       ...list.map((p) => h('div.row', h('i', { style: { background: p.color } }), p.name, p.host ? h('small', 'host') : null)),
-      game.net ? h('p.small', 'Invite link: ', h('code', `${location.origin}/join/${game.net.code}`)) : null,
+      game.net ? h('p.small', 'Invite link: ', h('code', `${PUBLIC_URL}/join/${game.net.code}`)) : null,
     );
   }
 }

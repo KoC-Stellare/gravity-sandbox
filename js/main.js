@@ -10,6 +10,7 @@ import { account } from './net/supa.js';
 import { social } from './net/social.js';
 import { Room } from './net/room.js';
 import { sanitizeMap, getDefaultMap } from './maps/defaults.js';
+import { PUBLIC_URL } from './config.js';
 
 function setLoading(text) {
   const el = $('#loading');
@@ -99,7 +100,7 @@ class App {
     $('#pause-settings').onclick = () => this.menu.settingsModal();
     $('#pause-friends').onclick = () => this.menu.friendsModal();
     $('#pause-invite').onclick = () => {
-      const url = `${location.origin}/join/${this.game.net.code}`;
+      const url = `${PUBLIC_URL}/join/${this.game.net.code}`;
       navigator.clipboard?.writeText(url);
       toast('Invite link copied: ' + url);
     };

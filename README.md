@@ -34,6 +34,24 @@ The database (tables, security rules) is already set up. Nothing else to configu
 
 Open the site in Chrome or Edge on your PC → click the **Install** icon at the right of the address bar. It opens in its own window, like any app.
 
+## 4. Desktop app (Windows .exe)
+
+The same game also ships as a real Windows program (Electron), in the `desktop/` folder. It contains its own browser engine, so it runs exactly like the website, starts without internet (singleplayer), and online play uses the same accounts and rooms as the website.
+
+**Get the .exe (no installs needed):** on GitHub open **Actions → Desktop app → Run workflow**. After about 5 minutes the finished run has a download called **GravitySandBox-windows** containing:
+- `GravitySandBox-<version>-win-x64.exe`: the installer (Start menu + desktop shortcut)
+- `GravitySandBox-<version>-win-x64.zip`: the same app without installer (unzip and run `Gravity SandBox.exe`)
+
+Pushing a tag like `v1.1.0` builds the same files and attaches them to a GitHub Release.
+
+Windows shows "Windows protected your PC" for the installer because it is not code-signed: click **More info → Run anyway**.
+
+**Run it from source** (needs [Node.js](https://nodejs.org) 22): `cd desktop`, `npm install`, `npm start`. `npm run dist` builds the Windows files into `desktop/dist/`.
+
+In the app: **F11** or **Alt+Enter** toggles fullscreen (remembered for next time). Invite and map links point to the website (`SITE_URL` in `js/config.js`).
+
+The `desktop/` folder is not part of the website. When uploading to Netlify by drag and drop, it does no harm, but don't drag it after running `npm install` (its `node_modules` folder is large).
+
 ---
 
 ## Learning the game
@@ -110,6 +128,8 @@ js/                    the game (plain JavaScript modules)
 lib/                   three.js r170 and Rapier physics (bundled, works offline)
 icons/, manifest.webmanifest, sw.js   install-as-app support
 _redirects, _headers   Netlify settings
+desktop/               Windows desktop app (Electron wrapper around the same files)
+.github/workflows/     builds the desktop app on GitHub
 supabase/schema.sql    the database setup, for reference
 ```
 
@@ -120,4 +140,5 @@ Tuning lives in `js/config.js` (object limit, telekinesis limit, player speed, n
 - [three.js](https://threejs.org) — MIT License
 - [Rapier](https://rapier.rs) physics by Dimforge — Apache License 2.0 (bundled build from [lo-th/phy](https://github.com/lo-th/phy), MIT)
 - [Supabase JS](https://github.com/supabase/supabase-js) — MIT License
+- [Electron](https://www.electronjs.org) — MIT License (desktop app)
 - Fonts: Space Grotesk and Inter via Google Fonts — SIL Open Font License

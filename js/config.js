@@ -5,6 +5,11 @@ export const SUPABASE_URL = 'https://mhtxnmknuexraimyrjtq.supabase.co';
 export const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1odHhubWtudWV4cmFpbXlyanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NDU2MjUsImV4cCI6MjEwODMyMTYyNX0.hRiqPiC4Io6lywMulAyH8FN0huk5pFjCuw_5dLB86O8';
 
+// Public website. Invite/map links and auth e-mails always point here, also from the desktop app
+// (which runs from a private app:// address that nobody else can open).
+export const SITE_URL = 'https://sandbox-gravity.netlify.app';
+export const PUBLIC_URL = /^https?:$/.test(location.protocol) ? location.origin : SITE_URL;
+
 export const GAME_NAME = 'Gravity SandBox';
 export const VERSION = '1.1.0';
 
