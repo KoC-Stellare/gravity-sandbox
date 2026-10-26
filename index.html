@@ -4,58 +4,242 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gravity SandBox</title>
-  <meta name="description" content="A first-person physics sandbox: bend gravity, walk on walls, create gravity bubbles and move things with your mind. Play alone or with friends." />
+  <meta name="description" content="A first-person physics sandbox: bend gravity, walk on walls, create gravity bubbles and move things with your mind. Free for Windows and Linux, alone or with friends." />
   <meta name="theme-color" content="#2b3442" />
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Gravity SandBox" />
+  <meta property="og:description" content="Bend gravity, walk on walls and move anything with your mind. A free first-person physics sandbox for up to 5 friends." />
+  <meta property="og:image" content="https://sandbox-gravity.netlify.app/img/og.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="/icons/icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <script>try { const t = localStorage.getItem('gs-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css" />
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "/lib/three.module.js",
-      "three/addons/utils/BufferGeometryUtils.js": "/lib/BufferGeometryUtils.js",
-      "rapier": "/lib/rapier.js",
-      "supabase": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"
-    }
-  }
-  </script>
+  <link rel="stylesheet" href="/css/site.css" />
+  <link rel="preload" as="image" href="/img/hero-poster.webp" />
 </head>
 <body>
-  <canvas id="c"></canvas>
-
-  <div id="hud" class="hidden"></div>
-  <div id="chat" class="hidden"></div>
-  <div id="power-panel"></div>
-  <div id="editor" class="hidden"></div>
-  <div id="menu" class="hidden"></div>
-  <div id="invites"></div>
-
-  <div id="pause">
-    <div class="pause-box">
-      <div class="logo small"><span class="l1">GRAVITY</span><span class="l2">SANDBOX</span></div>
-      <p id="pause-room" class="room-code"></p>
-      <button class="btn primary" id="pause-resume">Resume</button>
-      <button class="btn" id="pause-powers">Power settings</button>
-      <button class="btn" id="pause-settings">Settings &amp; keys</button>
-      <button class="btn" id="pause-friends">Friends &amp; invites</button>
-      <button class="btn" id="pause-invite">Copy invite link</button>
-      <button class="btn" id="pause-skip">Skip tutorial step</button>
-      <button class="btn" id="pause-exit-tut">Exit tutorial</button>
-      <button class="btn accent" id="pause-editor">Back to editor</button>
-      <button class="btn danger" id="pause-leave">Leave to menu</button>
-      <p class="small">Click the game or press Esc to resume</p>
+  <header class="top">
+    <div class="wrap top-in">
+      <a class="brand" href="/" aria-label="Gravity SandBox home"><span class="b1">GRAVITY</span><span class="b2">SANDBOX</span></a>
+      <nav class="top-nav" aria-label="Sections">
+        <a href="#about">About</a>
+        <a href="#powers">Powers</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <button class="theme-btn" type="button" aria-label="Switch light or dark theme" title="Light or dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" /></svg>
+      </button>
+      <a class="btn accent" href="/download">Get the game</a>
     </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <video class="hero-media" autoplay muted loop playsinline poster="/img/hero-poster.webp" aria-hidden="true">
+        <source src="/video/hero.mp4" type="video/mp4" />
+      </video>
+      <div class="wrap hero-in">
+        <p class="eyebrow">First-person physics sandbox</p>
+        <h1>Bend gravity.<br />Walk on walls.<br /><span>Move anything with your mind.</span></h1>
+        <p class="hero-lead">Seven gravity powers, four handmade maps, a map builder and rooms for up to five friends. No levels, no rules: just you and physics.</p>
+        <div class="hero-cta">
+          <a class="btn accent big" href="/download">Get the game</a>
+          <a class="btn ghost big" href="#about">What is it?</a>
+        </div>
+        <p class="hero-note">Free · Windows and Linux · also playable in your browser</p>
+      </div>
+    </section>
+
+    <section class="facts" aria-label="Highlights">
+      <div class="wrap facts-in">
+        <div><b>7</b><span>gravity powers</span></div>
+        <div><b>120&nbsp;Hz</b><span>physics, gravity computed per object</span></div>
+        <div><b>100</b><span>physics objects per map</span></div>
+        <div><b>5</b><span>players per room</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="wrap about">
+        <div class="about-text reveal">
+          <p class="eyebrow">What is Gravity SandBox?</p>
+          <h2>A playground where gravity takes orders from you</h2>
+          <p class="about-lead">Gravity SandBox is a first-person physics sandbox. Point at a crate and make it fall upward. Switch off gravity for the whole room and watch everything drift. Walk up a wall and across the ceiling, drop bubbles of zero-g, tie objects together with Newton’s law of attraction, or simply pick things up with your mind and throw them.</p>
+          <p>There are no levels, scores or timers. You get four handmade maps, seven powers that combine with each other and a map builder. The only goal is to find out what happens. Play alone, or invite up to four friends and break physics together.</p>
+        </div>
+        <ul class="pillars">
+          <li class="reveal"><span class="pi">◎</span><b>Real physics</b><span>Every object has a real mass and its own gravity, recalculated 120 times a second. Heavy things are hard to throw, light things fly.</span></li>
+          <li class="reveal"><span class="pi">⇅</span><b>Powers that combine</b><span>Flip the world sideways, then walk on the new floor. Put a bubble in a corridor, then throw a sofa through it.</span></li>
+          <li class="reveal"><span class="pi">✦</span><b>Build and share</b><span>Make your own maps, test them in a second and share them with a secret link or with friends.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section alt" id="powers">
+      <div class="wrap">
+        <div class="reveal">
+          <p class="eyebrow">Seven powers, keys 1 to 7</p>
+          <h2>Gravity is yours to change</h2>
+          <p class="lead">Every power works on everything: crates, furniture, bubbles and other players. Try the keys <kbd>1</kbd>–<kbd>7</kbd> right here.</p>
+        </div>
+        <div class="powers reveal">
+          <div class="power-list" role="tablist" aria-label="Powers">
+            <button role="tab" class="power-tab" data-key="1" data-media="power-object" aria-selected="true"><kbd>1</kbd><span><b>Object gravity</b><small>Give one thing its own gravity: any direction, 0–10 g, mass ×0.1 to ×100.</small></span></button>
+            <button role="tab" class="power-tab" data-key="2" data-media="power-scan"><kbd>2</kbd><span><b>Area scan</b><small>Hold to grow a sphere, release to change everything inside it at once.</small></span></button>
+            <button role="tab" class="power-tab" data-key="3" data-media="power-world"><kbd>3</kbd><span><b>World gravity</b><small>Turn the whole map: zero-g, Moon, Mars, Earth, 3 g, 10 g, or “down is where I look”.</small></span></button>
+            <button role="tab" class="power-tab" data-key="4" data-media="power-body"><kbd>4</kbd><span><b>Body gravity</b><small>Walk on the wall or ceiling you aim at. Stronger gravity flips you faster.</small></span></button>
+            <button role="tab" class="power-tab" data-key="5" data-media="power-bubble"><kbd>5</kbd><span><b>Bubbles</b><small>Place zones with their own gravity: zero-g, a direction, pull in or push out.</small></span></button>
+            <button role="tab" class="power-tab" data-key="6" data-media="power-attract"><kbd>6</kbd><span><b>Attraction</b><small>Link objects and they pull on each other with Newton’s F = G·m₁·m₂/d².</small></span></button>
+            <button role="tab" class="power-tab" data-key="7" data-media="power-telekinesis"><kbd>7</kbd><span><b>Telekinesis</b><small>Grab, throw, push, pull, rotate, crush and expand. Lifts up to 350 kg.</small></span></button>
+          </div>
+          <figure class="power-view" role="tabpanel" aria-live="polite">
+            <video id="power-video" muted loop playsinline preload="none" poster="/img/power-object.webp"></video>
+            <figcaption id="power-cap"></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="maps">
+      <div class="wrap">
+        <div class="reveal">
+          <p class="eyebrow">Four maps to break</p>
+          <h2>Indoor rooms and open sky</h2>
+          <p class="lead">Two closed rooms and two open-air maps with an invisible ceiling, so nothing floats away forever.</p>
+        </div>
+        <div class="maps">
+          <article class="map reveal"><img src="/img/map-lab.webp" alt="The Lab: a large grid-walled test chamber with stairs, pillars and stacks of crates" width="1120" height="630" loading="lazy" /><div class="map-label"><h3>The Lab</h3><p>Indoor test chamber with every kind of object. The guided tutorial teaches each power here.</p></div></article>
+          <article class="map reveal"><img src="/img/map-apartment.webp" alt="The Apartment: a furnished living area with a dining table and stairs" width="1120" height="630" loading="lazy" /><div class="map-label"><h3>The Apartment</h3><p>A furnished two-floor home. Sofas, fridges and bookshelves: household chaos.</p></div></article>
+          <article class="map reveal"><img src="/img/map-yard.webp" alt="The Yard: an outdoor industrial yard with shipping containers and an orange gantry crane" width="1120" height="630" loading="lazy" /><div class="map-label"><h3>The Yard</h3><p>Outdoor industrial yard with containers, pipes and seriously heavy objects.</p></div></article>
+          <article class="map reveal"><img src="/img/map-atrium.webp" alt="The Atrium: tall dark towers connected by white balconies and orange ramps" width="1120" height="630" loading="lazy" /><div class="map-label"><h3>The Atrium</h3><p>Open-air towers and balconies, made for zero-g jumps and bubbles.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="gallery">
+      <div class="wrap">
+        <div class="reveal">
+          <p class="eyebrow">Gallery</p>
+          <h2>Straight from the game</h2>
+          <p class="lead">Every picture and video on this page was captured in the game. Click a picture to see it big.</p>
+        </div>
+        <div class="gallery"><!-- filled from the list in js/site.js --></div>
+      </div>
+    </section>
+
+    <section class="section" id="build">
+      <div class="wrap split">
+        <div class="split-text reveal">
+          <p class="eyebrow">Build Map</p>
+          <h2>Make your own playground</h2>
+          <p class="lead">Start from an empty plain or a closed room and build as many private maps as you like.</p>
+          <ul class="ticks">
+            <li>Spawn, delete, move, rotate and scale, with grid snap</li>
+            <li>Make pieces static or let them fall with physics</li>
+            <li>Test any time in singleplayer with one key</li>
+            <li>Save to your account and share by secret link or with friends</li>
+          </ul>
+        </div>
+        <img class="shot reveal" src="/img/build-map.webp" alt="The Build Map editor with its toolbar and map panel over The Yard" width="1280" height="720" loading="lazy" />
+      </div>
+    </section>
+
+    <section class="section alt" id="multiplayer">
+      <div class="wrap split rev">
+        <div class="split-text reveal">
+          <p class="eyebrow">Multiplayer</p>
+          <h2>Bring up to four friends</h2>
+          <p class="lead">Host a room on any map, including your own, and share the six-letter code or an invite link.</p>
+          <ul class="ticks">
+            <li>Everyone can use every power, at the same time</li>
+            <li>Telekinesis works on players too: they ragdoll</li>
+            <li>Friends list, invites and a small chat</li>
+            <li>Same account in the desktop app and in the browser</li>
+          </ul>
+        </div>
+        <img class="shot reveal" src="/img/multiplayer.webp" alt="Four colored mannequin players standing around a dining table in The Apartment" width="1120" height="630" loading="lazy" />
+      </div>
+    </section>
+
+    <section class="section" id="news">
+      <div class="wrap news">
+        <div class="reveal">
+          <p class="eyebrow">What’s new</p>
+          <h2>Updates</h2>
+        </div>
+        <ol class="releases">
+          <li class="reveal">
+            <div class="rel-head"><span class="tag">1.2.0</span><b>Desktop app and new website</b></div>
+            <ul>
+              <li>Gravity SandBox is now a desktop app for Windows (installer or portable) and Linux (AppImage).</li>
+              <li>The app starts without internet; singleplayer works fully offline.</li>
+              <li>New website with videos, gallery and a download page. The browser version moved to <a href="/play">/play</a>; old invite and map links keep working.</li>
+            </ul>
+          </li>
+          <li class="reveal">
+            <div class="rel-head"><span class="tag">1.1.0</span><b>The sandbox</b></div>
+            <ul>
+              <li>Seven powers: object gravity, area scan, world gravity, body gravity, bubbles, attraction and telekinesis.</li>
+              <li>Four maps: The Lab, The Apartment, The Yard and The Atrium.</li>
+              <li>Build Map with saving and sharing, multiplayer rooms for up to five players, friends and invites.</li>
+              <li>Guided tutorial, How to play page and first-time tips.</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section alt" id="faq">
+      <div class="wrap faq">
+        <div class="reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2>Questions and answers</h2>
+        </div>
+        <div class="faq-list reveal">
+          <details><summary>Is Gravity SandBox free?</summary><p>Yes. There are no ads and nothing to buy.</p></details>
+          <details><summary>Which computers can run it?</summary><p>The desktop app runs on Windows 10 and 11 and on most 64-bit Linux systems. On a Mac, or anywhere else, you can play in a recent Chrome, Edge or Firefox. You need a keyboard and mouse; phones and tablets are not supported.</p></details>
+          <details><summary>Do I need an account?</summary><p>No. Guests can play every map and power in singleplayer. A free account lets you save your own maps, add friends, and host or join rooms.</p></details>
+          <details><summary>How does multiplayer work?</summary><p>One player hosts a room on any map and shares the six-letter code or an invite link. Up to five players can join. The host’s computer runs the physics, so the player with the strongest PC and connection should host.</p></details>
+          <details><summary>Can app and browser players play together?</summary><p>Yes. Accounts, friends, rooms and saved maps are shared between the desktop app and the browser version.</p></details>
+          <details><summary>A friend can’t join my room. What can I do?</summary><p>Players connect directly to each other. Some strict networks (schools, offices, some mobile hotspots) block this. Try another network, or let the friend on the open network host.</p></details>
+          <details><summary>I found a bug or have an idea.</summary><p>Great! Tell us on <a href="https://github.com/KoC-Stellare/gravity-sandbox/issues">GitHub</a>. A short description and, for bugs, what you did just before help a lot.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="wrap cta-in reveal">
+        <h2>Ready to break physics?</h2>
+        <p>Free download for Windows and Linux. Guests can play singleplayer right away, no account needed.</p>
+        <a class="btn accent big" href="/download">Get the game</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <a class="brand small" href="/"><span class="b1">GRAVITY</span><span class="b2">SANDBOX</span></a>
+      <nav aria-label="Footer">
+        <a href="/download">Download</a>
+        <a href="/play">Play in browser</a>
+        <a href="https://github.com/KoC-Stellare/gravity-sandbox/issues">Report a bug</a>
+      </nav>
+      <p class="credits">Made with <a href="https://threejs.org">three.js</a>, <a href="https://rapier.rs">Rapier</a>, <a href="https://supabase.com">Supabase</a> and <a href="https://www.electronjs.org">Electron</a>.</p>
+    </div>
+  </footer>
+
+  <div class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Picture viewer">
+    <button class="lb-close" type="button" aria-label="Close">×</button>
+    <button class="lb-prev" type="button" aria-label="Previous picture">‹</button>
+    <figure><img alt="" /><figcaption></figcaption></figure>
+    <button class="lb-next" type="button" aria-label="Next picture">›</button>
   </div>
 
-  <div id="loading" class="show">
-    <div class="loader"><div class="orbit"><i></i><i></i></div><p id="loading-text">Loading…</p></div>
-  </div>
-
-  <noscript>Gravity SandBox needs JavaScript.</noscript>
-  <script type="module" src="/js/main.js"></script>
+  <script src="/js/site.js" defer></script>
 </body>
 </html>

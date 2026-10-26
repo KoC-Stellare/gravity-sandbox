@@ -2,7 +2,7 @@
   "name": "Gravity SandBox",
   "short_name": "Gravity SandBox",
   "description": "First-person gravity and telekinesis sandbox.",
-  "start_url": "/",
+  "start_url": "/play",
   "scope": "/",
   "display": "standalone",
   "orientation": "landscape",

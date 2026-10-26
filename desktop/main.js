@@ -41,8 +41,8 @@ function resolveFile(pathname) {
   return file.startsWith(base + path.sep) ? file : null;
 }
 
-function indexHtml() {
-  return fs.readFileSync(path.join(WEB_ROOT, 'index.html'), 'utf8')
+function gameHtml() {
+  return fs.readFileSync(path.join(WEB_ROOT, 'play.html'), 'utf8')
     .replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/, '/vendor/supabase.js')
     .replace(/\s*<link rel="preconnect"[^>]*>/g, '')
     .replace(/<link href="https:\/\/fonts\.googleapis\.com[^>]*>/, '<link rel="stylesheet" href="/vendor/fonts.css" />');
@@ -51,9 +51,9 @@ function indexHtml() {
 async function serve(request) {
   const { pathname } = new URL(request.url);
   const file = resolveFile(decodeURIComponent(pathname));
-  // Like the website's _redirects: /, /join/CODE and /map/TOKEN all open the game page.
-  if (!path.extname(pathname) || file === path.join(WEB_ROOT, 'index.html')) {
-    return new Response(indexHtml(), { headers: { 'content-type': MIME['.html'] } });
+  // The app has no website pages: /, /play, /join/CODE and /map/TOKEN all open the game.
+  if (!path.extname(pathname) || file === path.join(WEB_ROOT, 'play.html')) {
+    return new Response(gameHtml(), { headers: { 'content-type': MIME['.html'] } });
   }
   if (!file) return new Response('Not found', { status: 404 });
   try {

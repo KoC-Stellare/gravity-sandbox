@@ -11,7 +11,7 @@ export const SITE_URL = 'https://sandbox-gravity.netlify.app';
 export const PUBLIC_URL = /^https?:$/.test(location.protocol) ? location.origin : SITE_URL;
 
 export const GAME_NAME = 'Gravity SandBox';
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 
 export const G_EARTH = 9.81;          // m/s²
 export const MAX_G = 10;              // max gravity strength in g

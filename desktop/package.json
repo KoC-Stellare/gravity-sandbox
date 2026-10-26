@@ -1,8 +1,9 @@
 {
   "name": "gravity-sandbox-desktop",
   "productName": "Gravity SandBox",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "First-person gravity and telekinesis sandbox.",
+  "desktopName": "gravity-sandbox.desktop",
   "author": "Gravity SandBox",
   "license": "UNLICENSED",
   "private": true,
@@ -15,7 +16,8 @@
     "vendor": "node scripts/vendor.mjs",
     "start": "npm run vendor && electron .",
     "dist": "npm run vendor && electron-builder --win --x64 --publish never",
-    "dist:dir": "npm run vendor && electron-builder --dir --publish never"
+    "dist:dir": "npm run vendor && electron-builder --dir --publish never",
+    "dist:linux": "npm run vendor && electron-builder --linux AppImage --x64 --publish never"
   },
   "devDependencies": {
     "@fontsource-variable/inter": "5.3.0",
@@ -28,7 +30,7 @@
   "build": {
     "appId": "app.gravitysandbox.desktop",
     "productName": "Gravity SandBox",
-    "artifactName": "GravitySandBox-${version}-${os}-${arch}.${ext}",
+    "artifactName": "GravitySandBox-Windows.${ext}",
     "directories": {
       "output": "dist"
     },
@@ -41,7 +43,7 @@
         "from": "..",
         "to": "web",
         "filter": [
-          "index.html",
+          "play.html",
           "manifest.webmanifest",
           "css/**",
           "js/**",
@@ -63,16 +65,20 @@
     },
     "linux": {
       "target": [
-        "dir"
+        "AppImage"
       ],
-      "category": "Game"
+      "category": "Game",
+      "artifactName": "GravitySandBox-Linux.${ext}",
+      "synopsis": "First-person gravity and telekinesis sandbox",
+      "syncDesktopName": true
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Gravity SandBox"
+      "shortcutName": "Gravity SandBox",
+      "artifactName": "GravitySandBox-Setup.${ext}"
     }
   }
 }

@@ -1,5 +1,5 @@
-# Builds the Windows desktop app (installer + portable zip).
-# Run it from the Actions tab ("Run workflow"), or push a tag like v1.1.0 to also publish a GitHub Release.
+# Builds the desktop app: Windows (installer + portable zip) and Linux (AppImage).
+# Run it from the Actions tab ("Run workflow"), or push a tag like v1.2.0 to also publish a GitHub Release.
 name: Desktop app
 
 on:
@@ -13,8 +13,21 @@ permissions:
   contents: write
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist
+            artifact: GravitySandBox-windows
+            files: |
+              desktop/dist/*.exe
+              desktop/dist/*.zip
+          - os: ubuntu-latest
+            script: dist:linux
+            artifact: GravitySandBox-linux
+            files: desktop/dist/*.AppImage
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: desktop
@@ -26,16 +39,24 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - run: npm ci
-      - run: npm run dist
+      - run: npm run ${{ matrix.script }}
       - uses: actions/upload-artifact@v4
         with:
-          name: GravitySandBox-windows
-          path: |
-            desktop/dist/*.exe
-            desktop/dist/*.zip
-      - if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
         with:
           files: |
-            desktop/dist/*.exe
-            desktop/dist/*.zip
+            out/*.exe
+            out/*.zip
+            out/*.AppImage

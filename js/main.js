@@ -113,7 +113,7 @@ class App {
   route() {
     const m = location.pathname.match(/^\/(join|map)\/([A-Za-z0-9]+)/);
     if (!m) return;
-    history.replaceState(null, '', '/');
+    history.replaceState(null, '', '/play');
     if (m[1] === 'join') {
       if (!account.loggedIn) { this.pendingJoin = m[2].toUpperCase(); this.menu.show('account'); toast('Log in or sign up to join the room'); return; }
       this.joinRoom(m[2]);
