@@ -6,8 +6,8 @@ Hosting: Netlify (static, this folder is the site root). Backend: Supabase proje
 
 ## Website
 - `/` = `index.html` presentation page, `/download` = `download.html`, `/play` = `play.html` (the game). `_redirects` sends `/join/*` and `/map/*` to `play.html`; after routing the game replaces the URL with `/play`. Auth email redirects go to `PUBLIC_URL + '/play'`.
-- Website pages use `css/site.css` + `js/site.js` only (no game code). Screenshots in `img/` were made by driving the real game headlessly (camera override + `sim.command(...)` + stepping `sim.update` manually, since SwiftShader renders slowly).
-- Download buttons link to `github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Setup.exe` / `GravitySandBox-Windows.zip` (fixed names set in `desktop/package.json`). A release only exists after pushing a `v*` tag.
+- Website pages use `css/site.css` + `js/site.js` only (no game code). Screenshots in `img/` and clips in `video/` (H.264 MP4, 30 fps, 1280×720) were made by driving the real game headlessly: take over `game.update`/`renderer.render`, script camera + `sim.command(...)` per frame, step `sim.update(1/30)`, grab `canvas.toDataURL` and encode with ffmpeg (SwiftShader is too slow for real-time capture). Home page has a light/dark theme (system default, toggle saved in localStorage `gs-theme`), scroll reveal (off with reduced motion), power videos load only when selected and on screen.
+- Download buttons link to `github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Setup.exe` / `GravitySandBox-Windows.zip` / `GravitySandBox-Linux.AppImage` (fixed names set in `desktop/package.json`). A release only exists after pushing a `v*` tag.
 
 ## Decisions agreed with the owner
 - Sandbox, no levels. 4 default maps: The Lab + The Apartment (closed rooms), The Yard + The Atrium (open sky with an invisible ceiling/walls from `map.bounds`).
@@ -30,7 +30,7 @@ Hosting: Netlify (static, this folder is the site root). Backend: Supabase proje
 ## Desktop app (`desktop/`)
 - Electron wrapper, no changes to the game code needed: `desktop/main.js` serves the site folder on the private scheme `app://gravity/` (SPA fallback like `_redirects`) and rewrites `play.html` (served for every extensionless path) to use bundled copies of Supabase JS and the fonts (`desktop/scripts/vendor.mjs` → `desktop/vendor/`, generated, gitignored). Service worker is skipped (only registers on https).
 - Links/auth redirects use `PUBLIC_URL` from `js/config.js` (= page origin on the web, `SITE_URL` in the app). Never use `location.origin` for shareable links.
-- Windows builds via GitHub Actions (`.github/workflows/desktop.yml`, windows-latest, electron-builder NSIS + zip); tag `v*` makes a Release. Steam integration not done yet (planned: steamworks.js).
+- Builds via GitHub Actions (`.github/workflows/desktop.yml`: windows-latest NSIS + zip, ubuntu-latest AppImage); tag `v*` makes one Release with all files. No Mac build (owner's decision). Steam integration not done yet (planned: steamworks.js).
 - Local test: `cd desktop && npm install && npm run dist:dir` then drive `dist/linux-unpacked/gravity-sandbox-desktop` with Playwright `_electron` under `xvfb-run` (`--no-sandbox --enable-unsafe-swiftshader`).
 
 ## Testing

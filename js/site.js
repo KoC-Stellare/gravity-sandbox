@@ -66,14 +66,14 @@ if (tabs.length) {
 // ---- gallery + picture viewer ----
 const PICTURES = [
   ['gallery-zero-g', 'Gravity switched off in The Lab'],
-  ['gallery-sideways', 'World gravity pointing sideways: everything falls towards the wall'],
+  ['gallery-flip', 'Body gravity: turning onto the wall'],
   ['gallery-wall', 'Body gravity: walking on the wall'],
-  ['power-bubble', 'A zero-g bubble in The Yard lifts a stack of barrels'],
+  ['gallery-bubble', 'A zero-g bubble in The Yard lifts a stack of barrels'],
   ['gallery-atrium', 'Zero-g in The Atrium'],
   ['gallery-throw', 'Telekinesis: a crate thrown into a pile of boxes'],
-  ['power-attract', 'Attraction pulls twenty boxes into one floating cluster'],
-  ['gallery-crates', 'Object gravity sends a stack of crates sideways'],
-  ['power-scan', 'Area scan selects everything inside the sphere'],
+  ['gallery-attract', 'Attraction pulls twenty boxes into one floating cluster'],
+  ['gallery-crates', 'Object gravity lifts a whole stack of crates'],
+  ['gallery-scan', 'Area scan selects everything inside the sphere'],
 ];
 const gallery = document.querySelector('.gallery');
 const lightbox = document.querySelector('.lightbox') || { hidden: true };

@@ -195,7 +195,7 @@ details[open] summary::after { transform: rotate(45deg); }
 details p { margin: 10px 0 0; color: var(--muted); }
 
 /* call to action */
-.cta-band { position: relative; overflow: hidden; background: var(--navy) url('/img/gallery-sideways.webp') center / cover; color: #fff; text-align: center; padding: 120px 0; }
+.cta-band { position: relative; overflow: hidden; background: var(--navy) url('/img/gallery-zero-g.webp') center / cover; color: #fff; text-align: center; padding: 120px 0; }
 .cta-band::before { content: ''; position: absolute; inset: 0; background: rgba(16,21,29,.78); }
 .cta-in { position: relative; }
 .cta-band h2 { color: #fff; }
