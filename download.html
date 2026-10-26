@@ -4,13 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Download Gravity SandBox</title>
-  <meta name="description" content="Download Gravity SandBox for Windows for free, or play it in your browser." />
+  <meta name="description" content="Download Gravity SandBox for Windows or Linux for free, or play it in your browser." />
   <meta name="theme-color" content="#2b3442" />
   <meta property="og:title" content="Download Gravity SandBox" />
-  <meta property="og:description" content="Free first-person gravity sandbox for Windows. Also playable in your browser." />
+  <meta property="og:description" content="Free first-person gravity sandbox for Windows and Linux. Also playable in your browser." />
   <meta property="og:image" content="https://sandbox-gravity.netlify.app/img/og.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <script>try { const t = localStorage.getItem('gs-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -21,11 +22,15 @@
     <div class="wrap top-in">
       <a class="brand" href="/" aria-label="Gravity SandBox home"><span class="b1">GRAVITY</span><span class="b2">SANDBOX</span></a>
       <nav class="top-nav" aria-label="Sections">
+        <a href="/#about">About</a>
         <a href="/#powers">Powers</a>
-        <a href="/#maps">Maps</a>
-        <a href="/#build">Build</a>
-        <a href="/#multiplayer">Multiplayer</a>
+        <a href="/#gallery">Gallery</a>
+        <a href="/#faq">FAQ</a>
       </nav>
+      <button class="theme-btn" type="button" aria-label="Switch light or dark theme" title="Light or dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" /></svg>
+      </button>
       <a class="btn" href="/play">Play in browser</a>
     </div>
   </header>
@@ -33,32 +38,46 @@
   <main class="dl">
     <div class="wrap">
       <h1>Download Gravity SandBox</h1>
-      <p class="lead">Free for Windows. Your account, saved maps and friends are the same in the app and in the browser.</p>
+      <p class="lead">Free for Windows and Linux. Your account, saved maps and friends are the same in the app and in the browser.</p>
+      <p class="meta" id="release-meta" hidden></p>
 
       <div class="dl-grid">
-        <section class="dl-card main" aria-labelledby="win-title">
+        <section class="dl-card main" id="windows" aria-labelledby="win-title">
           <div class="dl-head">
-            <svg class="win" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4.6 10 3.5v7.8H2zm9-1.2L22 2v9.3H11zM2 12.4h8v7.8L2 19.1zm9 0h11V22l-11-1.5z" /></svg>
+            <svg class="os" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4.6 10 3.5v7.8H2zm9-1.2L22 2v9.3H11zM2 12.4h8v7.8L2 19.1zm9 0h11V22l-11-1.5z" /></svg>
             <div>
               <h2 id="win-title">Windows</h2>
-              <p class="meta" id="release-meta">Windows 10 and 11, 64-bit</p>
+              <p class="meta">Windows 10 and 11, 64-bit</p>
             </div>
           </div>
-          <a class="btn accent big block" id="dl-setup" href="https://github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Setup.exe">Download installer (.exe)</a>
-          <a class="btn block" id="dl-zip" href="https://github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Windows.zip">Portable version (.zip)</a>
+          <a class="btn accent big block" data-asset="GravitySandBox-Setup.exe" href="https://github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Setup.exe">Download installer (.exe)</a>
+          <a class="btn block" data-asset="GravitySandBox-Windows.zip" href="https://github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Windows.zip">Portable version (.zip)</a>
           <p class="small">The installer adds Start menu and desktop shortcuts. The portable version runs from any folder without installing.</p>
         </section>
 
-        <section class="dl-card side" aria-labelledby="web-title">
-          <h2 id="web-title">Not on Windows?</h2>
-          <p>Play the same game in your browser on Windows, macOS or Linux, with nothing to install.</p>
-          <a class="btn primary block" href="/play">Play in browser</a>
-          <p class="small">Needs a desktop computer with keyboard and mouse, and a recent Chrome, Edge or Firefox.</p>
+        <section class="dl-card main" id="linux" aria-labelledby="linux-title">
+          <div class="dl-head">
+            <svg class="os" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.6 0 1.4.3 2.3-.5 3.6-.9 1.4-2.6 3.5-2.6 6 0 .8.2 1.4.5 2-.7.3-1.6.6-1.6 1.4 0 .9 1.3 1 2.6 1.2 1.1.2 1.9.9 2.9.9.8 0 1.3-.4 1.6-.9h1.4c.3.5.8.9 1.6.9 1 0 1.8-.7 2.9-.9 1.3-.2 2.6-.3 2.6-1.2 0-.8-.9-1.1-1.6-1.4.3-.6.5-1.2.5-2 0-2.5-1.7-4.6-2.6-6-.8-1.3-.5-2.2-.5-3.6C15.6 3.9 14.2 2 12 2zm-1.6 4.2c.4 0 .7.5.7 1.1s-.3 1.1-.7 1.1-.7-.5-.7-1.1.3-1.1.7-1.1zm3.2 0c.4 0 .7.5.7 1.1s-.3 1.1-.7 1.1-.7-.5-.7-1.1.3-1.1.7-1.1zM12 9.2c.9 0 2 .5 2 1s-1.1 1.1-2 1.1-2-.6-2-1.1 1.1-1 2-1z" /></svg>
+            <div>
+              <h2 id="linux-title">Linux</h2>
+              <p class="meta">64-bit, Ubuntu 22.04 or similar</p>
+            </div>
+          </div>
+          <a class="btn accent big block" data-asset="GravitySandBox-Linux.AppImage" href="https://github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Linux.AppImage">Download AppImage</a>
+          <p class="small">One file, nothing to install. Make it executable once (right-click → <em>Properties</em> → <em>Allow executing file as program</em>, or <code>chmod +x GravitySandBox-Linux.AppImage</code>), then double-click it.</p>
         </section>
       </div>
 
+      <section class="dl-card side wide" aria-labelledby="web-title">
+        <div>
+          <h2 id="web-title">On a Mac, or don’t want to install?</h2>
+          <p>Play the same game in your browser, with nothing to install. Needs a desktop computer with keyboard and mouse, and a recent Chrome, Edge or Firefox.</p>
+        </div>
+        <a class="btn primary big" href="/play">Play in browser</a>
+      </section>
+
       <section class="steps" aria-labelledby="steps-title">
-        <h2 id="steps-title">Get playing in three steps</h2>
+        <h2 id="steps-title">Get playing on Windows in three steps</h2>
         <ol>
           <li><b>Download</b><span>Click “Download installer” above. The file is about 100 MB.</span></li>
           <li><b>Install</b><span>Open the file. If Windows says “Windows protected your PC”, click <em>More info</em> and then <em>Run anyway</em>: the game is new and not code-signed yet.</span></li>
@@ -66,11 +85,11 @@
         </ol>
       </section>
 
-      <div class="dl-grid two">
+      <div class="dl-grid">
         <section class="dl-card" aria-labelledby="req-title">
           <h2 id="req-title">System requirements</h2>
           <dl class="req">
-            <dt>System</dt><dd>Windows 10 or 11, 64-bit</dd>
+            <dt>System</dt><dd>Windows 10 or 11, or 64-bit Linux (Ubuntu 22.04, Fedora 38 or newer)</dd>
             <dt>Graphics</dt><dd>Any graphics card with WebGL 2 (most from 2014 on)</dd>
             <dt>Memory</dt><dd>4 GB RAM</dd>
             <dt>Disk</dt><dd>400 MB free space</dd>
@@ -79,10 +98,11 @@
         </section>
         <section class="dl-card" aria-labelledby="faq-title">
           <h2 id="faq-title">Questions</h2>
-          <details><summary>Is it free?</summary><p>Yes. There are no ads and no purchases.</p></details>
+          <details><summary>Is it free?</summary><p>Yes. There are no ads and nothing to buy.</p></details>
           <details><summary>Do I need an account?</summary><p>No. Guests can play singleplayer. A free account lets you save your maps, add friends and host or join rooms.</p></details>
-          <details><summary>Can app and browser players play together?</summary><p>Yes. Rooms, invites and friends work across both.</p></details>
-          <details><summary>How do I update?</summary><p>Download the latest installer from this page and run it. Your settings and account stay.</p></details>
+          <details><summary>Can app and browser players play together?</summary><p>Yes. Rooms, invites and friends work across all versions.</p></details>
+          <details><summary>How do I update?</summary><p>Download the newest file from this page. On Windows run the installer again; on Linux replace the old AppImage. Your settings and account stay.</p></details>
+          <details><summary>Something doesn’t work.</summary><p>Tell us on <a href="https://github.com/KoC-Stellare/gravity-sandbox/issues">GitHub</a> and include your system and what happened.</p></details>
         </section>
       </div>
     </div>
@@ -94,6 +114,7 @@
       <nav aria-label="Footer">
         <a href="/">Home</a>
         <a href="/play">Play in browser</a>
+        <a href="https://github.com/KoC-Stellare/gravity-sandbox/issues">Report a bug</a>
       </nav>
       <p class="credits">Made with <a href="https://threejs.org">three.js</a>, <a href="https://rapier.rs">Rapier</a>, <a href="https://supabase.com">Supabase</a> and <a href="https://www.electronjs.org">Electron</a>.</p>
     </div>

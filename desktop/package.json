@@ -3,6 +3,7 @@
   "productName": "Gravity SandBox",
   "version": "1.2.0",
   "description": "First-person gravity and telekinesis sandbox.",
+  "desktopName": "gravity-sandbox.desktop",
   "author": "Gravity SandBox",
   "license": "UNLICENSED",
   "private": true,
@@ -15,7 +16,8 @@
     "vendor": "node scripts/vendor.mjs",
     "start": "npm run vendor && electron .",
     "dist": "npm run vendor && electron-builder --win --x64 --publish never",
-    "dist:dir": "npm run vendor && electron-builder --dir --publish never"
+    "dist:dir": "npm run vendor && electron-builder --dir --publish never",
+    "dist:linux": "npm run vendor && electron-builder --linux AppImage --x64 --publish never"
   },
   "devDependencies": {
     "@fontsource-variable/inter": "5.3.0",
@@ -63,9 +65,12 @@
     },
     "linux": {
       "target": [
-        "dir"
+        "AppImage"
       ],
-      "category": "Game"
+      "category": "Game",
+      "artifactName": "GravitySandBox-Linux.${ext}",
+      "synopsis": "First-person gravity and telekinesis sandbox",
+      "syncDesktopName": true
     },
     "nsis": {
       "oneClick": false,
