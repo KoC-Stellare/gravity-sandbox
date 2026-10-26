@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gravity SandBox</title>
+  <meta name="description" content="A first-person physics sandbox: bend gravity, walk on walls, create gravity bubbles and move things with your mind. Play alone or with friends." />
+  <meta name="theme-color" content="#2b3442" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/lib/three.module.js",
+      "three/addons/utils/BufferGeometryUtils.js": "/lib/BufferGeometryUtils.js",
+      "rapier": "/lib/rapier.js",
+      "supabase": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="hud" class="hidden"></div>
+  <div id="chat" class="hidden"></div>
+  <div id="power-panel"></div>
+  <div id="editor" class="hidden"></div>
+  <div id="menu" class="hidden"></div>
+  <div id="invites"></div>
+
+  <div id="pause">
+    <div class="pause-box">
+      <div class="logo small"><span class="l1">GRAVITY</span><span class="l2">SANDBOX</span></div>
+      <p id="pause-room" class="room-code"></p>
+      <button class="btn primary" id="pause-resume">Resume</button>
+      <button class="btn" id="pause-powers">Power settings</button>
+      <button class="btn" id="pause-settings">Settings &amp; keys</button>
+      <button class="btn" id="pause-friends">Friends &amp; invites</button>
+      <button class="btn" id="pause-invite">Copy invite link</button>
+      <button class="btn" id="pause-skip">Skip tutorial step</button>
+      <button class="btn" id="pause-exit-tut">Exit tutorial</button>
+      <button class="btn accent" id="pause-editor">Back to editor</button>
+      <button class="btn danger" id="pause-leave">Leave to menu</button>
+      <p class="small">Click the game or press Esc to resume</p>
+    </div>
+  </div>
+
+  <div id="loading" class="show">
+    <div class="loader"><div class="orbit"><i></i><i></i></div><p id="loading-text">Loading…</p></div>
+  </div>
+
+  <noscript>Gravity SandBox needs JavaScript.</noscript>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

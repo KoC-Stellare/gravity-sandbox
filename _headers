@@ -2,6 +2,10 @@
   Cache-Control: no-cache
 /index.html
   Cache-Control: no-cache
+/play.html
+  Cache-Control: no-cache
+/download.html
+  Cache-Control: no-cache
 /js/*
   Cache-Control: public, max-age=0, must-revalidate
 /css/*

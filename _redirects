@@ -1,2 +1,4 @@
-/join/*  /index.html  200
-/map/*   /index.html  200
+/play     /play.html      200
+/download /download.html  200
+/join/*   /play.html      200
+/map/*    /play.html      200

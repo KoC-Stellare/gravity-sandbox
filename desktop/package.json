@@ -1,7 +1,7 @@
 {
   "name": "gravity-sandbox-desktop",
   "productName": "Gravity SandBox",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "First-person gravity and telekinesis sandbox.",
   "author": "Gravity SandBox",
   "license": "UNLICENSED",
@@ -28,7 +28,7 @@
   "build": {
     "appId": "app.gravitysandbox.desktop",
     "productName": "Gravity SandBox",
-    "artifactName": "GravitySandBox-${version}-${os}-${arch}.${ext}",
+    "artifactName": "GravitySandBox-Windows.${ext}",
     "directories": {
       "output": "dist"
     },
@@ -41,7 +41,7 @@
         "from": "..",
         "to": "web",
         "filter": [
-          "index.html",
+          "play.html",
           "manifest.webmanifest",
           "css/**",
           "js/**",
@@ -72,7 +72,8 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Gravity SandBox"
+      "shortcutName": "Gravity SandBox",
+      "artifactName": "GravitySandBox-Setup.${ext}"
     }
   }
 }
