@@ -3,7 +3,7 @@ import { DEFAULT_MAPS, TEMPLATES, getDefaultMap } from '../maps/defaults.js';
 import { account } from '../net/supa.js';
 import { social } from '../net/social.js';
 import { settings, BINDING_LABELS, DEFAULT_BINDINGS, keyLabel } from '../core/settings.js';
-import { PLAYER_COLORS, GAME_NAME, VERSION, MAX_PLAYERS } from '../config.js';
+import { PLAYER_COLORS, GAME_NAME, VERSION, MAX_PLAYERS, PUBLIC_URL } from '../config.js';
 import { powerHelp, controlsHelp, ART, resetTips } from './help.js';
 
 
@@ -127,7 +127,7 @@ export class Menu {
     const friendsBox = h('div.share-friends', h('p.small', 'Loading friends…'));
     const renderLink = (token) => {
       clear(linkBox);
-      const url = token ? `${location.origin}/map/${token}` : '';
+      const url = token ? `${PUBLIC_URL}/map/${token}` : '';
       linkBox.append(
         h('label.pp-check', h('input', { type: 'checkbox', checked: !!token, onchange: async (e) => {
           try { renderLink(await account.setLink(m.id, e.target.checked)); } catch (err) { toast(err.message, 'warn'); }

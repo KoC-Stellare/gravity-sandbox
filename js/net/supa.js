@@ -16,7 +16,7 @@ try {
     removeChannel() {},
   });
 }
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL } from '../config.js';
 import { Emitter } from '../util.js';
 
 const likeEscape = (s) => s.replace(/[\\%_]/g, (c) => '\\' + c);
@@ -69,7 +69,7 @@ class Account extends Emitter {
     if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) throw new Error('Username: 3–20 letters, numbers or _');
     const { data: taken } = await supa.from('profiles').select('id').ilike('username', likeEscape(username)).maybeSingle().then((r) => r, () => ({ data: null }));
     if (taken) throw new Error('That username is taken');
-    const { data, error } = await supa.auth.signUp({ email, password, options: { data: { username, color }, emailRedirectTo: location.origin } });
+    const { data, error } = await supa.auth.signUp({ email, password, options: { data: { username, color }, emailRedirectTo: PUBLIC_URL } });
     if (error) throw error;
     if (!data.session) return { needsConfirm: true };
     this.session = data.session;
@@ -90,7 +90,7 @@ class Account extends Emitter {
     this.emit('change');
   }
   async resetPassword(email) {
-    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: PUBLIC_URL });
     if (error) throw error;
   }
 

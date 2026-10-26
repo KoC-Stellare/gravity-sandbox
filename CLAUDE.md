@@ -22,8 +22,14 @@ Hosting: Netlify (static, this folder is the site root). Backend: Supabase proje
 - `js/player/controller.js`: kinematic capsule with its own up-frame (Rapier character controller) + depenetration after rotating.
 - Database schema + RLS: `supabase/schema.sql` (tables profiles, friendships, maps, map_links, map_shares; helpers in schema `private`; `get_map_by_token` RPC for link sharing). Auto-expose of new tables is OFF: grant explicitly.
 
+## Desktop app (`desktop/`)
+- Electron wrapper, no changes to the game code needed: `desktop/main.js` serves the site folder on the private scheme `app://gravity/` (SPA fallback like `_redirects`) and rewrites `index.html` to use bundled copies of Supabase JS and the fonts (`desktop/scripts/vendor.mjs` → `desktop/vendor/`, generated, gitignored). Service worker is skipped (only registers on https).
+- Links/auth redirects use `PUBLIC_URL` from `js/config.js` (= page origin on the web, `SITE_URL` in the app). Never use `location.origin` for shareable links.
+- Windows builds via GitHub Actions (`.github/workflows/desktop.yml`, windows-latest, electron-builder NSIS + zip); tag `v*` makes a Release. Steam integration not done yet (planned: steamworks.js).
+- Local test: `cd desktop && npm install && npm run dist:dir` then drive `dist/linux-unpacked/gravity-sandbox-desktop` with Playwright `_electron` under `xvfb-run` (`--no-sandbox --enable-unsafe-swiftshader`).
+
 ## Testing
 No network in the cloud container besides git. Tests used headless Chromium (Playwright is preinstalled) against a local `python3 -m http.server`-style server, replacing the Supabase import with a stub (offline, or a BroadcastChannel fake of Realtime for two-tab multiplayer tests). Physics/aim checks via `window.__gs` (the App: `__gs.game`, `__gs.editor`).
 
 ## Deploy
-Drag the folder onto Netlify (or connect this repo). `_redirects` makes `/join/CODE` and `/map/TOKEN` work. Supabase Auth Site URL + redirect URL must be the Netlify address. Bump `VERSION` in `sw.js` and `js/config.js` on each release so the PWA cache refreshes.
+Drag the folder onto Netlify (or connect this repo). `_redirects` makes `/join/CODE` and `/map/TOKEN` work. Supabase Auth Site URL + redirect URL must be the Netlify address. Bump `VERSION` in `sw.js`, `js/config.js` and `version` in `desktop/package.json` on each release so the PWA cache refreshes.
