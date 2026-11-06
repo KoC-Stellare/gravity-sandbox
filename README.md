@@ -1,153 +1,127 @@
 # Gravity SandBox
 
-A first-person physics sandbox for desktop browsers: change gravity for single objects, whole maps, your own body and bubble zones, and move anything with telekinesis. Play alone or with up to 4 friends.
+**Bend gravity. Walk on walls. Move anything with your mind.**
 
-This folder is the complete, ready-to-upload website. There is no build step.
+Gravity SandBox is a free first-person physics sandbox. Every object has its own gravity, and you control it: make a crate fall upward, switch off gravity for the whole room, walk across the ceiling, drop bubbles of zero-g or throw furniture with telekinesis. Play alone, or invite up to four friends and break physics together.
 
-The website has three parts:
-- `/`: the presentation page (`index.html`): what the game is, its powers, maps, builder and multiplayer.
-- `/download`: the download page (`download.html`) with the Windows app and a link to play in the browser.
-- `/play`: the game itself (`play.html`). Invite links (`/join/CODE`) and map links (`/map/TOKEN`) also open the game.
+▶ **Website:** <https://sandbox-gravity.netlify.app>
+🎮 **Play in your browser:** <https://sandbox-gravity.netlify.app/play>
+⬇ **Download for Windows or Linux:** <https://sandbox-gravity.netlify.app/download>
 
----
-
-## 1. Put it online (Netlify)
-
-1. Go to <https://app.netlify.com> → **Add new site → Deploy manually**.
-2. Drag this whole folder (`gravity-sandbox`) onto the upload box.
-3. When it finishes, Netlify shows your address, e.g. `https://something.netlify.app`.
-   You can rename it in **Site configuration → Change site name**.
-
-To update later, open the site in Netlify → **Deploys** → drag the folder again.
-
-The files `_redirects` and `_headers` are Netlify settings. Keep them: they make invite links (`/join/CODE`) and map links (`/map/TOKEN`) work.
-
-## 2. Connect Supabase to your address (one time)
-
-In <https://supabase.com/dashboard> → project **gravity-sanbox**:
-
-1. **Authentication → URL Configuration**
-   - **Site URL**: your Netlify address, e.g. `https://something.netlify.app`
-   - **Redirect URLs**: add `https://something.netlify.app/**`
-2. **Authentication → Sign In / Providers → Email**
-   - While testing you can turn **Confirm email** off, so new accounts work instantly.
-   - Turn it back on before you share the game publicly (it reduces spam accounts).
-
-The database (tables, security rules) is already set up. Nothing else to configure.
-
-## 3. Install it like an app
-
-Open `/play` in Chrome or Edge on your PC → click the **Install** icon at the right of the address bar. It opens in its own window, like any app.
-
-## 4. Desktop app (Windows and Linux)
-
-The same game also ships as a real program for Windows and Linux (Electron), in the `desktop/` folder. It contains its own browser engine, so it runs exactly like the website, starts without internet (singleplayer), and online play uses the same accounts and rooms as the website.
-
-**Get the apps (no installs needed):** on GitHub open **Actions → Desktop app → Run workflow**. After about 5 minutes the finished run has two downloads:
-- **GravitySandBox-windows**: `GravitySandBox-Setup.exe` (installer with Start menu + desktop shortcut) and `GravitySandBox-Windows.zip` (no installer: unzip and run `Gravity SandBox.exe`)
-- **GravitySandBox-linux**: `GravitySandBox-Linux.AppImage` (one file: make it executable, then double-click)
-
-**Publish a release for the download page:** push a tag like `v1.2.0` (GitHub → Releases → *Draft a new release* → new tag `v1.2.0` on `main` also works). The workflow builds the files and attaches them to a GitHub Release. The download page always links to the newest release (`/releases/latest/download/…`) and shows its version and size.
-
-Windows shows "Windows protected your PC" for the installer because it is not code-signed: click **More info → Run anyway**.
-
-**Run it from source** (needs [Node.js](https://nodejs.org) 22): `cd desktop`, `npm install`, `npm start`. `npm run dist` builds the Windows files and `npm run dist:linux` the Linux AppImage into `desktop/dist/`.
-
-In the app: **F11** or **Alt+Enter** toggles fullscreen (remembered for next time). Invite and map links point to the website (`SITE_URL` in `js/config.js`).
-
-The `desktop/` folder is not part of the website. When uploading to Netlify by drag and drop, it does no harm, but don't drag it after running `npm install` (its `node_modules` folder is large).
+![Gravity switched off in The Lab: crates, barrels and balls float in the air](docs/screenshot-zero-g.webp)
 
 ---
 
-## Learning the game
+## What it is
 
-- **Tutorial**: Play → *Start tutorial* (or Settings → Start tutorial). 17 short tasks in The Lab that teach every power; each task completes when you do it. Esc lets you skip a step or exit.
-- **How to play**: a menu page with every power, a small diagram, how to use it, and all the controls.
-- **First-time tips**: the first time you play and the first time you use each power, a tip appears on the right. Turn them off or show them again in Settings → Help.
+A sandbox, not a level-based game. There are no scores, timers or missions. You get:
 
-## Controls (all keys can be changed in Settings)
+- **Seven gravity powers** that combine with each other (keys 1–7)
+- **Four handmade maps**: The Lab and The Apartment (closed rooms), The Yard and The Atrium (open sky)
+- **Build Map**, an editor to make your own playgrounds, save them and share them
+- **Multiplayer rooms** for up to five players, with friends, invites and a small chat
+- **A guided tutorial**, a How to play page and first-time tips
+
+### The seven powers
+
+| Key | Power | What it does |
+| --- | --- | --- |
+| 1 | **Object gravity** | Give one object its own gravity: any direction, 0–10 g, mass ×0.1 to ×100 |
+| 2 | **Area scan** | Grow a sphere and change everything inside it at once |
+| 3 | **World gravity** | Turn the whole map: zero-g, Moon, Mars, Earth, 3 g, 10 g, or "down is where I look" |
+| 4 | **Body gravity** | Walk on the wall or ceiling you aim at; stronger gravity flips you faster |
+| 5 | **Bubbles** | Zones with their own gravity: zero-g, a direction, pull in or push out |
+| 6 | **Attraction** | Link objects and they pull on each other with Newton's F = G·m₁·m₂/d² |
+| 7 | **Telekinesis** | Grab, throw, push, pull, rotate, crush and expand; lifts up to 350 kg |
+
+Every power works on everything: crates, furniture, bubbles and other players (grab a friend and they ragdoll).
+
+![Body gravity: turning onto the wall of The Lab](docs/screenshot-wall.webp)
+
+## How it works
+
+- **Real physics.** The game uses the [Rapier](https://rapier.rs) physics engine. Its built-in gravity is switched off: 120 times a second the game works out the gravity of every single object (its own setting, then any bubble it is in, then the world), adds attraction and telekinesis forces, and applies them. That is why every object can fall in a different direction.
+- **3D graphics** with [three.js](https://threejs.org): clean, flat-shaded low-poly style, drawn in the browser with WebGL 2.
+- **Multiplayer.** The host's computer runs the physics for everyone and streams the world to the other players 20 times a second, directly between computers (WebRTC). [Supabase](https://supabase.com) is only used to find each other, for accounts, friends and saved maps.
+- **One game, three ways to play.** The same code runs as a website, as an installable web app, and as a desktop program for Windows and Linux ([Electron](https://www.electronjs.org)). Accounts, friends, rooms and maps are shared between all of them.
+- **Feedback.** Players can send a bug report or an idea from the game (main menu or pause menu → *Send feedback*). Messages are stored safely: anyone can send one, nobody can read them back from the game.
+
+![The Build Map editor](docs/screenshot-build.webp)
+
+## Goals
+
+- **Gravity you can play with**, simulated realistically enough that experiments behave the way you expect.
+- **Easy to start:** no account and no install needed to play alone; a tutorial teaches every power in about five minutes.
+- **Fun together:** up to five friends in a room, everyone with every power, on any map including your own.
+- **Make and share:** a map builder that turns players into level designers.
+- **Runs everywhere a keyboard and mouse are:** browser, Windows and Linux, with the same account.
+
+## Install and play
+
+### In the browser (Windows, macOS, Linux)
+
+1. Open <https://sandbox-gravity.netlify.app/play> in a recent **Chrome, Edge or Firefox** on a desktop computer.
+2. Click the game to capture the mouse, and play. No account is needed for singleplayer.
+3. Optional: in Chrome or Edge, click the **Install** icon at the right of the address bar to open it in its own window like an app.
+
+### On a PC: Windows
+
+1. Download **`GravitySandBox-Setup.exe`** from the [latest release](https://github.com/KoC-Stellare/gravity-sandbox/releases/latest).
+2. Run it. If Windows says *"Windows protected your PC"*, click **More info → Run anyway** (the game is not code-signed yet).
+3. Start **Gravity SandBox** from the Start menu or the desktop shortcut.
+
+Prefer no installer? Download **`GravitySandBox-Windows.zip`**, unzip it anywhere and run `Gravity SandBox.exe`.
+
+### On a PC: Linux
+
+1. Download **`GravitySandBox-Linux.AppImage`** from the [latest release](https://github.com/KoC-Stellare/gravity-sandbox/releases/latest).
+2. Make it executable once: right-click → *Properties* → *Allow executing file as program*, or run `chmod +x GravitySandBox-Linux.AppImage`.
+3. Double-click it to play. It runs on most 64-bit distributions (Ubuntu 22.04, Fedora 38 or newer).
+
+The desktop app starts without internet (singleplayer works offline), toggles fullscreen with **F11** or **Alt+Enter**, and tells you when a new version is available.
+
+### Requirements
+
+- Keyboard and mouse
+- A graphics card with WebGL 2 (most from 2014 on), 4 GB RAM
+- Internet only for accounts and multiplayer
+
+## Controls
+
+All keys can be changed in Settings.
 
 | Key | Action |
 | --- | --- |
-| W A S D | Move |
-| Mouse | Look |
+| W A S D, mouse | Move, look |
 | Space / C | Jump / crouch (in zero-g: up / down) |
 | Shift | Sprint |
 | 1–7 or mouse wheel | Choose a power |
-| Left click | Use the power |
-| Right click | Undo / alternate (reset, throw, delete bubble…) |
+| Left click / right click | Use the power / undo or alternate |
 | Q | Power settings (direction, strength, mass, presets) |
 | F | Apply current settings to the aimed bubble or object |
 | R (hold) + mouse | Rotate the object you are holding |
-| Z / X | Crush / expand (shrink / grow; mass follows size) |
+| Z / X | Crush / expand (mass follows size) |
 | G | Go limp (ragdoll) / stand up |
 | Backspace (hold 1 s) | Reset all gravity in the room |
-| Tab (hold) | Players and room code |
-| Enter | Chat (multiplayer) |
+| Tab (hold) / Enter | Players and room code / chat |
 | Esc | Pause menu |
 
-### Powers
+**Build Map:** keys 1–5 for Spawn, Delete, Move, Rotate, Scale; **B** spawn menu, **P** test the map, **N** grid snap; right mouse + drag to look, W A S D to fly.
 
-1. **Object gravity**: change one object's gravity direction, strength (0–10 g) and mass (×0.1–×100).
-2. **Area scan**: hold to grow a sphere, release to apply the settings to everything inside.
-3. **World gravity**: set the whole map's "down" to where you look; 0 g, Moon, Mars, Earth, 3 g, 10 g presets.
-4. **Body gravity**: walk on the wall or ceiling you aim at. The turn is faster when gravity is stronger.
-5. **Bubble**: place a sphere with its own gravity (zero-g, a direction, toward or away from its center). Bubbles have no gravity themselves but drift when objects hit them.
-6. **Attraction**: link two objects (or an object and a point); they pull each other with F = G·m₁·m₂/d².
-7. **Telekinesis**: grab, carry, throw, push, pull, rotate, crush and expand. Lifts up to **350 kg** of effective weight (mass × gravity). Too heavy? Lower its gravity or mass first.
+**Multiplayer:** choose a map → **Host room**, then share the six-letter code or the invite link (Esc menu), or invite friends from the Friends list. The host's computer runs the physics, so the player with the strongest PC and connection should host. A few strict networks (schools, offices, some mobile hotspots) block direct connections; if a friend can't join, try another network.
 
-### Build Map
+## Feedback and bugs
 
-Menu → **Build Map** → start from *Flat Plain* or *Closed Room*.
-Tools: Spawn, Delete, Move, Rotate, Scale (keys 1–5). **B** opens the spawn menu, **P** tests the map, **N** toggles grid snap.
-Right mouse + drag looks around; W A S D flies. Save stores the map in your account (max 100 physics objects). From **Play → My maps** you can share a map by link or with friends.
+Use **Send feedback** in the game, or open an issue on [GitHub](https://github.com/KoC-Stellare/gravity-sandbox/issues).
 
-### Multiplayer
+## For developers
 
-Choose a map → **Host room**. Share the 6-letter code, copy the invite link from the Esc menu, or invite friends from the Friends list. Up to 5 players. The host's browser runs the physics for everyone, so the host should have the best PC and connection. If the host leaves, the room closes.
-
----
-
-## Good to know
-
-- **Supabase free plan pauses after about a week with no activity.** If logins stop working, open the Supabase dashboard and click **Restore project**. Singleplayer keeps working offline.
-- Multiplayer connects players directly (WebRTC). A few strict networks (some schools, offices, mobile hotspots) block this; if a friend can't join, try another network.
-- Supported browsers: recent Chrome, Edge or Firefox on a desktop computer.
-
-## Folder contents
-
-```
-index.html             presentation page (/)
-download.html          download page (/download)
-play.html              the game (/play)
-css/site.css, js/site.js   styles + script for the two website pages
-img/, video/           screenshots and gameplay clips used by the website
-css/style.css          all styles
-js/                    the game (plain JavaScript modules)
-  main.js              start-up, navigation
-  game.js              play session, multiplayer sync
-  physics/             world, gravity simulation, object catalog
-  player/              first-person controller, mannequin + ragdoll
-  powers/              the 7 powers and their visuals
-  maps/defaults.js     The Lab, The Apartment, The Yard, The Atrium + templates
-  editor/editor.js     Build Map
-  net/                 accounts, friends, maps (Supabase), rooms (WebRTC)
-  ui/                  HUD, menus, chat, power settings, help + tutorial
-  config.js            game constants (limits, Supabase address)
-lib/                   three.js r170 and Rapier physics (bundled, works offline)
-icons/, manifest.webmanifest, sw.js   install-as-app support
-_redirects, _headers   Netlify settings
-desktop/               desktop app for Windows and Linux (Electron wrapper around the same files)
-.github/workflows/     builds the desktop app on GitHub
-supabase/schema.sql    the database setup, for reference
-```
-
-Tuning lives in `js/config.js` (object limit, telekinesis limit, player speed, network rate).
+Everything needed to run, deploy and release the project (Netlify, Supabase, the desktop builds, the folder layout) is in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Credits
 
-- [three.js](https://threejs.org) — MIT License
-- [Rapier](https://rapier.rs) physics by Dimforge — Apache License 2.0 (bundled build from [lo-th/phy](https://github.com/lo-th/phy), MIT)
-- [Supabase JS](https://github.com/supabase/supabase-js) — MIT License
-- [Electron](https://www.electronjs.org) — MIT License (desktop app)
-- Fonts: Space Grotesk and Inter via Google Fonts — SIL Open Font License
+- [three.js](https://threejs.org): MIT License
+- [Rapier](https://rapier.rs) physics by Dimforge: Apache License 2.0 (bundled build from [lo-th/phy](https://github.com/lo-th/phy), MIT)
+- [Supabase JS](https://github.com/supabase/supabase-js): MIT License
+- [Electron](https://www.electronjs.org): MIT License (desktop app)
+- Fonts: Space Grotesk and Inter: SIL Open Font License

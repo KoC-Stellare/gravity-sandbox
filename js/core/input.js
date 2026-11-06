@@ -15,12 +15,13 @@ export class Input {
     this.locked = false;
     this.lockTime = 0;
     this.enabled = true;
+    this.suspended = false;  // true while a form (e.g. Feedback) is open: game ignores keys and mouse
     this.onLockChange = null;
     this.captureNext = null; // for rebinding
 
     window.addEventListener('keydown', (e) => {
       if (this.captureNext) { e.preventDefault(); const f = this.captureNext; this.captureNext = null; f(e.code); return; }
-      if (isTyping(e)) return;
+      if (isTyping(e) || this.suspended) return;
       if (['Tab', 'Space', 'Backspace'].includes(e.code) || (this.locked && e.code.startsWith('Digit'))) e.preventDefault();
       if (!this.down.has(e.code)) this.pressed.add(e.code);
       this.down.add(e.code);
@@ -31,6 +32,7 @@ export class Input {
     });
     window.addEventListener('blur', () => { this.down.clear(); this.mouseDown = [false, false, false]; });
     canvas.addEventListener('mousedown', (e) => {
+      if (this.suspended) return;
       this.mouseDown[e.button] = true; this.mousePressed[e.button] = true;
     });
     window.addEventListener('mouseup', (e) => {
@@ -56,7 +58,7 @@ export class Input {
   }
 
   lock() {
-    if (this.locked) return;
+    if (this.locked || this.suspended) return;
     const quiet = (p) => { if (p?.catch) p.catch(() => {}); };
     try {
       const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
@@ -64,6 +66,15 @@ export class Input {
     } catch { try { quiet(this.canvas.requestPointerLock()); } catch { /* ignore */ } }
   }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
+
+  /** Suspend or restore all game input (pointer lock, keys, mouse buttons, look). */
+  suspend(on) {
+    this.suspended = !!on;
+    this.down.clear(); this.pressed.clear();
+    this.mouseDown = [false, false, false];
+    this.dx = 0; this.dy = 0; this.wheel = 0;
+    if (on) this.unlock();
+  }
 
   code(action) { return settings.get('bindings')[action]; }
   is(action) { const c = this.code(action); return this.down.has(c) || (action === 'sprint' && this.down.has('ShiftRight')); }

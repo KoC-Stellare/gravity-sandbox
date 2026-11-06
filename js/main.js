@@ -11,6 +11,7 @@ import { social } from './net/social.js';
 import { Room } from './net/room.js';
 import { sanitizeMap, getDefaultMap } from './maps/defaults.js';
 import { PUBLIC_URL } from './config.js';
+import { openFeedback } from './ui/feedback.js';
 
 function setLoading(text) {
   const el = $('#loading');
@@ -104,6 +105,7 @@ class App {
       navigator.clipboard?.writeText(url);
       toast('Invite link copied: ' + url);
     };
+    $('#pause-feedback').onclick = () => openFeedback(this);
     $('#pause-leave').onclick = () => this.game.leave();
     $('#pause-editor').onclick = () => this.game.leave();
     $('#pause-skip').onclick = () => { this.game.tutorial?.skip(); this.game.resume(); };
