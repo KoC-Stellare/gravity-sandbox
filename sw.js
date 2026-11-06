@@ -1,5 +1,5 @@
 // Gravity SandBox service worker: makes the game installable and caches the app + libraries.
-const VERSION = 'gs-v1.1.0';
+const VERSION = 'gs-v1.2.0';
 const SHELL = [
   '/', '/index.html', '/css/style.css', '/lib/three.module.js', '/lib/BufferGeometryUtils.js', '/lib/rapier.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png',
   '/js/main.js', '/js/config.js', '/js/util.js', '/js/game.js',
@@ -10,7 +10,7 @@ const SHELL = [
   '/js/powers/powers.js', '/js/powers/visuals.js',
   '/js/maps/defaults.js', '/js/editor/editor.js',
   '/js/net/supa.js', '/js/net/room.js', '/js/net/social.js',
-  '/js/ui/dom.js', '/js/ui/hud.js', '/js/ui/menu.js', '/js/ui/chat.js', '/js/ui/powerpanel.js', '/js/ui/help.js', '/js/ui/tutorial.js',
+  '/js/ui/dom.js', '/js/ui/hud.js', '/js/ui/menu.js', '/js/ui/chat.js', '/js/ui/powerpanel.js', '/js/ui/help.js', '/js/ui/tutorial.js', '/js/ui/feedback.js',
 ];
 
 self.addEventListener('install', (e) => {

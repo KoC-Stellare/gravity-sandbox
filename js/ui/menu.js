@@ -5,6 +5,7 @@ import { social } from '../net/social.js';
 import { settings, BINDING_LABELS, DEFAULT_BINDINGS, keyLabel } from '../core/settings.js';
 import { PLAYER_COLORS, GAME_NAME, VERSION, MAX_PLAYERS, PUBLIC_URL } from '../config.js';
 import { powerHelp, controlsHelp, ART, resetTips } from './help.js';
+import { openFeedback } from './feedback.js';
 
 
 const NAV = [
@@ -36,6 +37,7 @@ export class Menu {
         id === 'friends' && this.pendingCount ? h('em.badge', this.pendingCount) : null)),
       h('div.nav-foot',
         account.loggedIn ? h('div.me', h('i', { style: { background: account.color } }), account.name) : h('div.me.guest', 'Playing as guest'),
+        h('button.link.fb-link', { onclick: () => openFeedback(this.app) }, 'Send feedback'),
         h('small', `v${VERSION}`)));
     const content = h('section.menu-content');
     clear(this.root).append(h('div.menu-shell', nav, content));

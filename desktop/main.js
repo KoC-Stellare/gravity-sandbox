@@ -1,7 +1,7 @@
 // Gravity SandBox desktop app (Electron). The game is the same website: its files are served
 // from the private address app://gravity/ so absolute paths (/js/…, /lib/…) and the import map
 // work unchanged. CDN imports (Supabase JS, Google Fonts) are swapped for bundled copies.
-const { app, BrowserWindow, Menu, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, net, protocol, session, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -10,6 +10,8 @@ const WEB_ROOT = app.isPackaged ? path.join(process.resourcesPath, 'web') : path
 const VENDOR_ROOT = app.isPackaged ? path.join(WEB_ROOT, 'vendor') : path.join(__dirname, 'vendor');
 const STATE_FILE = path.join(app.getPath('userData'), 'window.json');
 const ALLOWED_PERMISSIONS = new Set(['pointerLock', 'clipboard-sanitized-write', 'fullscreen']);
+const RELEASES_API = 'https://api.github.com/repos/KoC-Stellare/gravity-sandbox/releases/latest';
+const RELEASES_PAGE = 'https://github.com/KoC-Stellare/gravity-sandbox/releases/latest';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -68,6 +70,31 @@ function openExternal(url) {
   if (/^https?:\/\//.test(url)) shell.openExternal(url);
 }
 
+/** true when version string a (e.g. "1.10.0") is newer than b */
+function isNewer(a, b) {
+  const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+  return false;
+}
+
+/** The app has no auto-update: tell the player once per version when a newer release exists. */
+async function checkForUpdate(win) {
+  try {
+    const res = await net.fetch(RELEASES_API, { headers: { accept: 'application/vnd.github+json' } });
+    if (!res.ok) return;
+    const latest = String((await res.json()).tag_name || '').replace(/^v/, '');
+    const state = readState();
+    if (!/^\d+\.\d+\.\d+$/.test(latest) || !isNewer(latest, app.getVersion()) || state.skipVersion === latest) return;
+    const { response } = await dialog.showMessageBox(win, {
+      type: 'info', buttons: ['Download', 'Later', 'Skip this version'], defaultId: 0, cancelId: 1,
+      title: 'Update available', message: `Gravity SandBox ${latest} is available`,
+      detail: `You have version ${app.getVersion()}. Download the new version and install it over this one; your settings and account stay.`,
+    });
+    if (response === 0) shell.openExternal(RELEASES_PAGE);
+    if (response === 2) writeState({ ...state, skipVersion: latest });
+  } catch { /* offline or GitHub unreachable: try again next start */ }
+}
+
 function createWindow() {
   const state = readState();
   const win = new BrowserWindow({
@@ -84,7 +111,7 @@ function createWindow() {
   if (state.maximized && !state.fullscreen) win.maximize();
   win.once('ready-to-show', () => win.show());
 
-  const saveState = () => writeState({ fullscreen: win.isFullScreen(), maximized: win.isMaximized() });
+  const saveState = () => writeState({ ...readState(), fullscreen: win.isFullScreen(), maximized: win.isMaximized() });
   win.on('enter-full-screen', saveState);
   win.on('leave-full-screen', saveState);
   win.on('maximize', saveState);
@@ -117,6 +144,7 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((wc, permission) => ALLOWED_PERMISSIONS.has(permission));
 
   const win = createWindow();
+  if (app.isPackaged) win.webContents.once('did-finish-load', () => setTimeout(() => checkForUpdate(win), 4000));
   app.on('second-instance', () => {
     if (win.isMinimized()) win.restore();
     win.focus();
