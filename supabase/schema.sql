@@ -140,3 +140,5 @@ grant select, insert, update (status), delete on public.friendships to authentic
 grant select, insert, update (name, data, object_count), delete on public.maps to authenticated;
 grant select, insert, delete on public.map_links to authenticated;
 grant select, insert, delete on public.map_shares to authenticated;
+
+-- Later changes are in supabase/migrations/ (feedback table, extra indexes).

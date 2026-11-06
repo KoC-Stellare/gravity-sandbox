@@ -202,3 +202,21 @@ class Account extends Emitter {
 }
 
 export const account = new Account();
+
+export const FEEDBACK_CATEGORIES = ['bug', 'idea', 'altro'];
+
+/**
+ * Send a feedback message. Insert only: the database lets players add feedback but never read it back,
+ * so no .select() here (it would fail for lack of read permission).
+ */
+export async function sendFeedback(message, category) {
+  const text = String(message || '').trim();
+  if (text.length < 5 || text.length > 1000) throw new Error('Write between 5 and 1000 characters.');
+  if (!FEEDBACK_CATEGORIES.includes(category)) category = 'altro';
+  if (!online) throw new Error('You are offline. Connect to the internet and try again.');
+  const { error } = await supa.from('feedback').insert({ message: text, category });
+  if (!error) return;
+  if (/feedback_rate_limited/.test(error.message || '')) throw new Error('Too many messages right now. Please try again later.');
+  if (error.code === '23514') throw new Error('Write between 5 and 1000 characters.');
+  throw new Error('Could not send your feedback. Please try again later.');
+}
