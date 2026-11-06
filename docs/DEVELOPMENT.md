@@ -1,6 +1,8 @@
 # Gravity SandBox: development and deployment
 
-The repository root is the complete website. There is no build step: plain JavaScript modules plus an import map in `index.html`.
+The repository root is the complete website. There is no build step: plain JavaScript modules plus an import map in `play.html`.
+
+The website has three pages: `/` (`index.html`, presentation), `/download` (`download.html`) and `/play` (`play.html`, the game). Invite links (`/join/CODE`) and map links (`/map/TOKEN`) also open the game.
 
 ## Run it locally
 
@@ -10,7 +12,7 @@ Any static web server works, for example:
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. Online features (accounts, friends, multiplayer, feedback) use the Supabase project configured in `js/config.js`; if Supabase can't be reached the game runs offline in singleplayer.
+Then open <http://localhost:8000/play.html> for the game (the `/play` address needs Netlify's `_redirects`). Online features (accounts, friends, multiplayer, feedback) use the Supabase project configured in `js/config.js`; if Supabase can't be reached the game runs offline in singleplayer.
 
 ## Website hosting (Netlify)
 
@@ -64,7 +66,11 @@ The installer is not code-signed, so Windows SmartScreen shows a warning on firs
 ## Folder contents
 
 ```
-index.html             the game page
+index.html             presentation page (/)
+download.html          download page (/download)
+play.html              the game (/play)
+css/site.css, js/site.js   styles + script for the two website pages
+img/, video/           screenshots and gameplay clips for the website
 css/style.css          all styles
 js/                    the game (plain JavaScript modules)
   main.js              start-up, navigation
