@@ -1,6 +1,8 @@
 // Default maps and empty-map templates. Built in code so they ship with the game and
 // work offline. A map is plain JSON: statics (never move) + up to 100 dynamic objects.
 import { mulberry } from '../render/renderer.js';
+import { CATALOG, MATERIALS } from '../physics/catalog.js';
+import { MAX_OBJECTS } from '../config.js';
 
 const W = 0.5; // wall thickness
 
@@ -290,19 +292,46 @@ export function getDefaultMap(id) {
   return d ? d.build() : null;
 }
 
-/** Validate & sanitize a map coming from the network or the database. */
+/**
+ * Validate & sanitize a map coming from the network, a shared link or the database.
+ * Only known fields with sane numbers get through: a single NaN stops the physics engine.
+ */
 export function sanitizeMap(m) {
   if (!m || typeof m !== 'object') throw new Error('Invalid map');
-  const num = (x, d = 0) => (Number.isFinite(+x) ? +x : d);
-  const v3 = (a, d = [0, 0, 0]) => (Array.isArray(a) && a.length === 3 ? a.map((x) => num(x)) : d);
-  const out = {
-    version: 1, name: String(m.name || 'Untitled').slice(0, 40), env: m.env === 'outdoor' ? 'outdoor' : 'indoor',
-    template: m.template || null,
-    bounds: { min: v3(m.bounds?.min, [-50, -2, -50]), max: v3(m.bounds?.max, [50, 50, 50]) },
-    gravity: { dir: v3(m.gravity?.dir, [0, -1, 0]), s: Math.max(0, Math.min(98.1, num(m.gravity?.s, 9.81))) },
-    spawns: (m.spawns || [[0, 1, 0]]).slice(0, 8).map((s) => v3(s)),
-    statics: (m.statics || []).slice(0, 600).map((s) => ({ pos: v3(s.pos), size: v3(s.size, [1, 1, 1]).map((x) => Math.max(0.01, Math.min(400, x))), rot: v3(s.rot), color: /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#cccccc', ...(s.invisible ? { invisible: true } : {}) })),
-    objects: (m.objects || []).slice(0, 100).map((o) => ({ ...o, pos: v3(o.pos), ...(o.rot ? { rot: v3(o.rot) } : {}), ...(o.size ? { size: v3(o.size, [1, 1, 1]).map((x) => Math.max(0.02, Math.min(30, x))) } : {}) })),
+  const num = (x, d = 0) => (x != null && typeof x !== 'object' && Number.isFinite(+x) ? +x : d);
+  const lim = (x, a, b) => Math.max(a, Math.min(b, x));
+  const v3 = (a, d = [0, 0, 0]) => (Array.isArray(a) && a.length === 3 ? a.map((x) => lim(num(x), -1e4, 1e4)) : d);
+  const color = (c) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : null);
+  const rows = (a, max) => (Array.isArray(a) ? a : []).filter((x) => x && typeof x === 'object' && !Array.isArray(x)).slice(0, max);
+
+  const bmin = v3(m.bounds?.min, [-50, -2, -50]), bmax = v3(m.bounds?.max, [50, 50, 50]);
+  const bounds = { min: bmin.map((x, i) => Math.min(x, bmax[i])), max: bmin.map((x, i) => Math.max(x, bmax[i], Math.min(x, bmax[i]) + 1)) };
+  const spawns = (Array.isArray(m.spawns) ? m.spawns : []).filter((s) => Array.isArray(s) && s.length === 3).slice(0, 8).map((s) => v3(s));
+
+  const object = (o) => {
+    if (typeof o.type !== 'string' || !Object.hasOwn(CATALOG, o.type)) return null;
+    const out = { type: o.type, pos: v3(o.pos) };
+    if (Array.isArray(o.quat) && o.quat.length === 4) {
+      const q = o.quat.map((x) => num(x)), l = Math.hypot(...q);
+      if (l > 1e-6) out.quat = q.map((x) => x / l);
+    }
+    if (!out.quat && o.rot) out.rot = v3(o.rot);
+    if (o.size) out.size = v3(o.size, [1, 1, 1]).map((x) => lim(x, 0.02, 30));
+    if (typeof o.material === 'string' && Object.hasOwn(MATERIALS, o.material)) out.material = o.material;
+    if (color(o.color)) out.color = o.color;
+    if (o.scale != null) out.scale = lim(num(o.scale, 1), 0.1, 5);
+    if (o.massMul != null) out.massMul = lim(num(o.massMul, 1), 0.1, 100);
+    if (o.grav && typeof o.grav === 'object') out.grav = { dir: v3(o.grav.dir, [0, -1, 0]), s: lim(num(o.grav.s, 9.81), 0, 98.1) };
+    return out;
   };
-  return out;
+
+  return {
+    version: 1, name: String(m.name || 'Untitled').slice(0, 40), env: m.env === 'outdoor' ? 'outdoor' : 'indoor',
+    template: typeof m.template === 'string' ? m.template.slice(0, 20) : null,
+    bounds,
+    gravity: { dir: v3(m.gravity?.dir, [0, -1, 0]), s: lim(num(m.gravity?.s, 9.81), 0, 98.1) },
+    spawns: spawns.length ? spawns : [[0, 1, 0]],
+    statics: rows(m.statics, 600).map((s) => ({ pos: v3(s.pos), size: v3(s.size, [1, 1, 1]).map((x) => lim(x, 0.01, 400)), rot: v3(s.rot), color: color(s.color) || '#cccccc', ...(s.invisible ? { invisible: true } : {}) })),
+    objects: rows(m.objects, MAX_OBJECTS).map(object).filter(Boolean),
+  };
 }

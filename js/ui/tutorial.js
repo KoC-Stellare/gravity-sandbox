@@ -51,7 +51,8 @@ export class Tutorial {
     this.el = h('div.tutorial');
     document.getElementById('hud').append(this.el);
     this.cmds = [];
-    this.off = game.on('cmd', (c) => this.cmds.push(c));
+    // tkAim is sent every frame while holding something: no step needs it, and it would pile up
+    this.off = game.on('cmd', (c) => { if (c.c !== 'tkAim') this.cmds.push(c); });
     this.enterStep();
   }
 

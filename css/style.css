@@ -157,7 +157,7 @@ h3.sub { font-size: 18px; margin: 34px 0 12px; color: var(--navy); }
 .crosshair.on i { background: var(--cyan); }
 .crosshair.tk.on i, .crosshair.hold i { background: var(--coral); }
 .crosshair.hold { width: 40px; height: 40px; }
-.flash { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); font-size: 16px; font-weight: 600; opacity: 0; transition: opacity .25s; background: var(--glass); padding: 6px 14px; border-radius: 20px; white-space: nowrap; }
+.flash { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); font-size: 16px; font-weight: 600; opacity: 0; transition: opacity .25s; background: var(--glass); padding: 6px 14px; border-radius: 20px; white-space: nowrap; }
 .flash.show { opacity: 1; }
 .flash.warn { background: rgba(178, 69, 61, .85); }
 .target-info { background: rgba(22,29,40,.45); padding: 5px 9px; border-radius: 8px; position: absolute; left: calc(50% + 34px); top: calc(50% + 14px); display: flex; flex-direction: column; gap: 1px; font-size: 13px; opacity: 0; transition: opacity .15s; }

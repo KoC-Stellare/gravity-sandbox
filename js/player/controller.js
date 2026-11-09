@@ -12,6 +12,7 @@ const _q2 = new THREE.Quaternion();
 const _qy = new THREE.Quaternion();
 const _qp = new THREE.Quaternion();
 const _qv = new THREE.Quaternion();
+const GROUND_REST = 0.034;   // resting height of the feet: the controller's 0.03 skin plus a hair
 
 /**
  * First-person character controller with its own "down" direction (walls & ceilings).
@@ -107,15 +108,25 @@ export class PlayerController {
     }
   }
 
+  /** Distance from the feet to whatever is right under the body's centre, or null when nothing is close. */
+  groundGap(up) {
+    const R = this.R;
+    const ray = new R.Ray({ x: this.center.x, y: this.center.y, z: this.center.z }, { x: -up.x, y: -up.y, z: -up.z });
+    const hit = this.pw.world.castRay(ray, this.halfH + 0.25, false, R.QueryFilterFlags.EXCLUDE_SENSORS, undefined, this.collider, undefined,
+      (col) => !this.excluded.has(col.handle));
+    return hit ? (hit.timeOfImpact ?? hit.toi) - this.halfH : null;
+  }
+
   /**
    * @param {number} dt
    * @param {{x:number,z:number,jump:boolean,sprint:boolean,crouch:boolean,up:number}} inp
    */
   update(dt, inp) {
     if (this.ragdolled) return;
-    dt = Math.min(dt, 0.05);
+    dt = Math.min(dt, 0.1);   // same limit as the simulation (Sim.update), so the player and the world keep the same clock
     const g = this.computeGravity();
     const gLen = g.length();
+    let fallFix = 0;
     const up = this.getUp(new THREE.Vector3());
 
     // 1) rotate the body toward the new "up" — speed scales with gravity strength
@@ -153,13 +164,14 @@ export class PlayerController {
       if (diff.length() > maxDv) diff.setLength(maxDv);
       vH.add(diff);
       this.vel.copy(vH).add(vUp);
-      this.vel.addScaledVector(g, dt);
       if (this.grounded && inp.jump) {
         const into = this.vel.dot(up);
         if (into < 0) this.vel.addScaledVector(up, -into);
         this.vel.addScaledVector(up, PLAYER.jump);
         this.grounded = false;
       }
+      this.vel.addScaledVector(g, dt);
+      if (!this.grounded) fallFix = -0.5 * dt * dt;   // in the air only: on the ground the full push keeps the feet planted
       const vh = vH.length();
       this.walkPhase += this.grounded ? vh * dt * 2.2 : 0;
       this.moveAmount = this.grounded ? clamp(vh / PLAYER.walk, 0, 1.3) : 0.2;
@@ -176,7 +188,17 @@ export class PlayerController {
     }
 
     // 3) collide & slide
-    const desired = this.vel.clone().multiplyScalar(dt);
+    // Distance under constant acceleration is v·dt + ½·g·dt²; the velocity above already has the whole g·dt,
+    // so half of it is taken back. Jumps and falls are then the same at every frame rate.
+    const desired = this.vel.clone().multiplyScalar(dt).addScaledVector(g, fallFix);
+    // Standing on something: settle onto it, but do not press into it. A sweep that grazes the floor at
+    // contact distance makes the physics engine report tilted contact directions now and then, which
+    // showed up as small random hops while walking. Snap-to-ground keeps the feet down on slopes and steps.
+    if (this.grounded) {
+      const down = -desired.dot(up);
+      const gap = down > 0 ? this.groundGap(up) : null;
+      if (gap != null) desired.addScaledVector(up, down - clamp(gap - GROUND_REST, 0, down));
+    }
     this.cc.setUp({ x: up.x, y: up.y, z: up.z });
     const R = this.R;
     this.cc.computeColliderMovement(this.collider, { x: desired.x, y: desired.y, z: desired.z },
@@ -184,7 +206,14 @@ export class PlayerController {
     const m = this.cc.computedMovement();
     const moved = new THREE.Vector3(m.x, m.y, m.z);
     const blocked = desired.sub(moved);
-    if (blocked.lengthSq() > 1e-10) this.vel.addScaledVector(blocked, -1 / dt);
+    const bl = blocked.length();
+    if (bl > 1e-5) {
+      // Lose the speed that ran into something, and never more than that. Subtracting blocked/dt outright
+      // also turned the controller's millimetre position corrections into speed: random small hops while walking.
+      blocked.multiplyScalar(1 / bl);
+      const into = this.vel.dot(blocked);
+      if (into > 0) this.vel.addScaledVector(blocked, -Math.min(into, bl / dt));
+    }
     this.grounded = gLen > 0.05 && this.cc.computedGrounded();
     if (this.grounded) {
       const into = this.vel.dot(up);

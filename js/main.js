@@ -5,7 +5,7 @@ import { settings } from './core/settings.js';
 import { Game } from './game.js';
 import { Editor } from './editor/editor.js';
 import { Menu, showInvite } from './ui/menu.js';
-import { $, toast } from './ui/dom.js';
+import { $, h, toast, modal } from './ui/dom.js';
 import { account } from './net/supa.js';
 import { social } from './net/social.js';
 import { Room } from './net/room.js';
@@ -62,7 +62,8 @@ class App {
     settings.on('saved', (data) => {
       if (!account.loggedIn) return;
       clearTimeout(this._setT);
-      this._setT = setTimeout(() => account.updateProfile({ settings: data }).catch(() => {}), 1500);
+      // silent: a background save must not rebuild the menu under the player or reconnect anything
+      this._setT = setTimeout(() => account.updateProfile({ settings: data }, { silent: true }).catch(() => {}), 1500);
     });
     social.on('invite', (p) => showInvite(this, p));
     account.on('change', () => this.afterLogin(true));
@@ -85,7 +86,8 @@ class App {
         settings.merge(account.profile.settings);
         this.renderer.setQuality(settings.get('quality'));
       }
-      social.start();
+      if (social.userId !== account.id) social.start();   // profile edits also land here: keep the live connection
+      else social.track();
       this.menu.friendCache().then(() => this.menu.render());
       if (this.pendingJoin) { const c = this.pendingJoin; this.pendingJoin = null; this.joinRoom(c); }
     } else {
@@ -128,11 +130,10 @@ class App {
       const row = await account.mapByToken(token);
       setLoading('');
       if (!row) { toast('This map link is not valid anymore', 'warn'); return; }
-      const { modal } = await import('./ui/dom.js');
-      modal(`${row.name}`, `Shared by ${row.owner_name}`, [
+      modal(String(row.name), `Shared by ${row.owner_name}`, [
         { label: 'Play solo', primary: true, onClick: (c) => { c(); this.playSolo(row.data); } },
         { label: 'Host room', onClick: (c) => { c(); this.hostRoom(row.data); } },
-        ...(account.loggedIn ? [{ label: 'Copy to My Maps', onClick: async (c) => { c(); try { await account.saveMap({ name: row.name.slice(0, 34) + ' copy', data: row.data }); toast('Copied to your maps'); } catch (e) { toast(e.message, 'warn'); } } }] : []),
+        ...(account.loggedIn ? [{ label: 'Copy to My Maps', onClick: async (c) => { c(); try { await account.saveMap({ name: String(row.name).slice(0, 34) + ' copy', data: row.data }); toast('Copied to your maps'); } catch (e) { toast(e.message, 'warn'); } } }] : []),
       ]);
     } catch (e) { setLoading(''); toast('Could not open link: ' + e.message, 'warn'); }
   }
@@ -250,7 +251,8 @@ window.__gs = app;
 app.init().catch((e) => {
   console.error(e);
   setLoading('');
-  document.body.insertAdjacentHTML('beforeend', `<div class="fatal"><h2>Gravity SandBox could not start</h2><p>${String(e.message || e)}</p><p>Use a recent Chrome, Edge or Firefox on a desktop computer with WebGL 2.</p></div>`);
+  document.body.append(h('div.fatal', h('h2', 'Gravity SandBox could not start'), h('p', String(e.message || e)),
+    h('p', 'Use a recent Chrome, Edge or Firefox on a desktop computer with WebGL 2.')));
 });
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

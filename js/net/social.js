@@ -9,12 +9,13 @@ class Social extends Emitter {
     this.room = null;
     this.presence = null;
     this.inbox = null;
+    this.userId = null;      // account the channels are open for
   }
 
   async start() {
     this.stop();
     if (!account.loggedIn) return;
-    const me = account.id;
+    const me = this.userId = account.id;
     this.presence = supa.channel('online', { config: { presence: { key: me } } });
     this.presence.on('presence', { event: 'sync' }, () => {
       const state = this.presence.presenceState();
@@ -35,6 +36,7 @@ class Social extends Emitter {
     if (this.presence) supa.removeChannel(this.presence);
     if (this.inbox) supa.removeChannel(this.inbox);
     this.presence = this.inbox = null;
+    this.userId = null;
     this.online.clear();
   }
 

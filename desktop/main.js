@@ -26,7 +26,9 @@ protocol.registerSchemesAsPrivileged([
 // Dual-GPU laptops: run on the dedicated graphics card.
 app.commandLine.appendSwitch('force_high_performance_gpu');
 
-if (!app.requestSingleInstanceLock()) app.quit();
+// A second copy hands over to the first one and stops here (nothing below may run for it).
+const firstInstance = app.requestSingleInstanceLock();
+if (!firstInstance) app.quit();
 
 function readState() {
   try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch { return {}; }
@@ -52,7 +54,9 @@ function indexHtml() {
 
 async function serve(request) {
   const { pathname } = new URL(request.url);
-  const file = resolveFile(decodeURIComponent(pathname));
+  let decoded;
+  try { decoded = decodeURIComponent(pathname); } catch { return new Response('Bad request', { status: 400 }); }
+  const file = resolveFile(decoded);
   // Like the website's _redirects: /, /join/CODE and /map/TOKEN all open the game page.
   if (!path.extname(pathname) || file === path.join(WEB_ROOT, 'index.html')) {
     return new Response(indexHtml(), { headers: { 'content-type': MIME['.html'] } });
@@ -138,6 +142,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (!firstInstance) return;
   Menu.setApplicationMenu(null);
   protocol.handle('app', serve);
   session.defaultSession.setPermissionRequestHandler((wc, permission, done) => done(ALLOWED_PERMISSIONS.has(permission)));

@@ -125,15 +125,17 @@ export class Renderer {
     const dpr = window.devicePixelRatio || 1;
     const q = this.quality;
     this.renderer.setPixelRatio(q === 'low' ? Math.min(dpr, 1) * 0.75 : q === 'medium' ? Math.min(dpr, 1.25) : Math.min(dpr, 2));
-    this.renderer.shadowMap.enabled = q !== 'low';
-    this.sun.castShadow = q !== 'low';
+    const shadows = q !== 'low';
+    // switching shadows on or off needs every shader rebuilt; anything else does not
+    if (this.renderer.shadowMap.enabled !== shadows) this.scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
+    this.renderer.shadowMap.enabled = shadows;
+    this.sun.castShadow = shadows;
     const ms = q === 'high' ? 4096 : 2048;
     if (this.sun.shadow.mapSize.x !== ms) {
       this.sun.shadow.mapSize.set(ms, ms);
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
     }
-    this.scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
     this.resize();
   }
 

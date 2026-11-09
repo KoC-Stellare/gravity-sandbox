@@ -9,7 +9,7 @@ import { Hud } from './ui/hud.js';
 import { PowerPanel } from './ui/powerpanel.js';
 import { Chat } from './ui/chat.js';
 import { settings } from './core/settings.js';
-import { toV3, Emitter, clamp } from './util.js';
+import { toV3, Emitter, clamp, safeColor } from './util.js';
 import { G_EARTH, NET_HZ, INTERP_DELAY, TK_LIMIT_KG, PLAYER } from './config.js';
 import { getDefaultMap, sanitizeMap } from './maps/defaults.js';
 import { account } from './net/supa.js';
@@ -19,6 +19,22 @@ import { Tutorial } from './ui/tutorial.js';
 import { tipFor, tipSeen, markTip } from './ui/help.js';
 
 const SNAP_DT = 1 / NET_HZ;
+// Bodies per snapshot message: 2 + 32 * 8 floats = 1032 bytes, which fits one network packet.
+// Bigger messages are split by the browser and lost as a whole when any piece is lost.
+const SNAP_BODIES = 32;
+const _q1 = new THREE.Quaternion();
+const _v1 = new THREE.Vector3();
+const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
+const numArr = (a, n) => Array.isArray(a) && a.length === n && a.every(isNum);
+
+/** A player's pose message as plain checked numbers, or null. Poses are relayed to every other player. */
+function cleanPose(m) {
+  if (!m || !numArr(m.p, 3) || !numArr(m.q, 4)) return null;
+  const ql = Math.hypot(m.q[0], m.q[1], m.q[2], m.q[3]);
+  if (ql < 1e-6 || m.p.some((x) => Math.abs(x) > 1e5)) return null;
+  return { t: 'pose', p: m.p, q: m.q.map((x) => x / ql), v: numArr(m.v, 3) ? m.v.map((x) => clamp(x, -200, 200)) : [0, 0, 0],
+    c: isNum(m.c) ? clamp(m.c, 0, 1) : 0, w: isNum(m.w) ? m.w : 0, m: isNum(m.m) ? clamp(m.m, 0, 2) : 0 };
+}
 
 /**
  * The play session: singleplayer, multiplayer host (authoritative) or multiplayer client (mirror).
@@ -147,7 +163,7 @@ export class Game extends Emitter {
     this.tutorial?.destroy(); this.tutorial = null;
     this.hud.hideTip();
     this.visuals.clear();
-    for (const r of this.remote.values()) r.visual.dispose();
+    for (const r of this.remote.values()) disposeRemote(r);
     this.remote.clear();
     if (this.player) { this.player.dispose?.(); this.player = null; }
     this.ownBody?.dispose(); this.ownBody = null;
@@ -256,7 +272,11 @@ export class Game extends Emitter {
       this.net.broadcast({ t: 'players', list: this.playersMsg() });
       this.systemChat(`${peer.name} left`);
     });
-    room.on('message', (peer, msg) => { if (this.net === room && this.sim) this.onHostMessage(peer, msg); });
+    room.on('message', (peer, msg) => {
+      if (this.net !== room || !this.sim) return;
+      // whatever another player sends must never stop the host
+      try { this.onHostMessage(peer, msg); } catch (e) { console.warn('Ignored a bad message from', peer.name, e); }
+    });
     room.on('closed', (reason) => this.netClosed(reason));
     social.setRoom(room.code);
     this.chat.reset([]);
@@ -273,16 +293,18 @@ export class Game extends Emitter {
     switch (msg.t) {
       case 'pose': {
         const r = this.remote.get(peer.slot);
-        if (!r) return;
-        r.target = msg;
-        if (Array.isArray(msg.p) && Array.isArray(msg.q)) this.sim.setRemotePose(peer.slot, toV3(msg.p), new THREE.Quaternion(...msg.q), toV3(msg.v || [0, 0, 0]));
+        const pose = cleanPose(msg);
+        if (!r || !pose) return;
+        r.target = pose;
+        this.sim.setRemotePose(peer.slot, toV3(pose.p), new THREE.Quaternion(...pose.q), toV3(pose.v));
         break;
       }
       case 'cmd':
-        if (msg.cmd && typeof msg.cmd.c === 'string') this.sim.command(peer.slot, msg.cmd);
+        this.sim.command(peer.slot, msg.cmd);
         break;
       case 'chat': {
-        const text = String(msg.text || '').slice(0, 200);
+        if (typeof msg.text !== 'string') return;
+        const text = msg.text.slice(0, 200);
         if (!text.trim()) return;
         const m = { name: peer.name, color: peer.color, text };
         this.chatLog.push(m);
@@ -310,11 +332,23 @@ export class Game extends Emitter {
     this.net.broadcast({ t: 'chat', ...m });
   }
 
+  /** Body transforms as Float32 messages of at most `per` bodies each: [1, hostTime, (key, x, y, z, qx, qy, qz, qw)…] */
+  snapshotMessages(all, per) {
+    const arr = this.sim.snapshotBodies(all);
+    const out = [];
+    const size = per * 8;
+    for (let i = 0; i < arr.length || !out.length; i += size) {
+      const n = Math.min(size, arr.length - i);
+      const f = new Float32Array(2 + n);
+      f[0] = 1; f[1] = this.sim.time;
+      for (let k = 0; k < n; k++) f[2 + k] = arr[i + k];
+      out.push(f.buffer);
+    }
+    return out;
+  }
+
   sendFullSnapshot(peer) {
-    const arr = this.sim.snapshotBodies(true);
-    const f = new Float32Array(2 + arr.length);
-    f[0] = 1; f[1] = this.sim.time; f.set(arr, 2);
-    this.net.sendTo(peer, f.buffer, true);
+    for (const buf of this.snapshotMessages(true, 400)) this.net.sendTo(peer, buf, true);
   }
 
   hostNetTick(dt) {
@@ -326,10 +360,7 @@ export class Game extends Emitter {
     if (this.snapTimer < SNAP_DT) return;
     this.snapTimer %= SNAP_DT;
     if (!this.net.peers.size) return;
-    const arr = this.sim.snapshotBodies(false);
-    const f = new Float32Array(2 + arr.length);
-    f[0] = 1; f[1] = this.sim.time; f.set(arr, 2);
-    this.net.broadcast(f.buffer, false);
+    for (const buf of this.snapshotMessages(false, SNAP_BODIES)) this.net.broadcast(buf, false);
     // poses of all players + bubble positions
     const l = [this.localPose(0)];
     for (const [slot, r] of this.remote) if (r.target) l.push({ ...r.target, s: slot });
@@ -345,15 +376,17 @@ export class Game extends Emitter {
   // ------------------------------------------------------------ multiplayer: client
   onClientMessage(msg) {
     if (msg instanceof ArrayBuffer) { this.onSnapshot(msg); return; }
+    if (!msg || typeof msg !== 'object') return;
     switch (msg.t) {
       case 'meta': this.applyMeta(msg.meta); break;
       case 'players': this.setPlayers(msg.list); break;
       case 'poses': {
         if (msg.ht != null) this.syncClock(msg.ht);
         for (const ps of msg.l || []) {
-          if (ps.s === this.slot) continue;
+          if (!ps || ps.s === this.slot) continue;
           const r = this.remote.get(ps.s);
-          if (r) r.target = ps;
+          const pose = r && cleanPose(ps);
+          if (pose) r.target = pose;
         }
         for (const [id, x, y, z] of msg.b || []) {
           const b = this.mirrorField.bubbles.find((bb) => bb.id === id);
@@ -447,10 +480,10 @@ export class Game extends Emitter {
 
   setPlayers(list) {
     const slots = new Set();
-    for (const p of list) {
-      if (p.slot === this.slot) continue;
+    for (const p of Array.isArray(list) ? list : []) {
+      if (!p || !Number.isInteger(p.slot) || p.slot === this.slot) continue;
       slots.add(p.slot);
-      if (!this.remote.has(p.slot)) this.addRemote(p.slot, p.name, p.color);
+      if (!this.remote.has(p.slot)) this.addRemote(p.slot, String(p.name ?? 'Player').slice(0, 20), safeColor(p.color));
     }
     for (const s of [...this.remote.keys()]) if (!slots.has(s)) this.removeRemote(s);
   }
@@ -464,17 +497,17 @@ export class Game extends Emitter {
   }
   removeRemote(slot) {
     const r = this.remote.get(slot);
-    if (r) { r.visual.dispose(); this.remote.delete(slot); }
+    if (r) { disposeRemote(r); this.remote.delete(slot); }
   }
 
   updateRemoteVisuals(dt) {
-    const rags = this.sim ? Object.fromEntries([...this.sim.players.values()].filter((p) => p.ragdollId != null).map((p) => [p.slot, p.ragdollId])) : (this.meta?.ragdolls || {});
     for (const [slot, r] of this.remote) {
       const t = r.target;
-      const hidden = rags[slot] != null || !t;
+      const limp = this.sim ? this.sim.players.get(slot)?.ragdollId != null : this.meta?.ragdolls?.[slot] != null;
+      const hidden = limp || !t;
       r.visual.group.visible = !hidden;
       if (hidden) continue;
-      const tp = toV3(t.p), tq = new THREE.Quaternion(...t.q);
+      const tp = _v1.fromArray(t.p), tq = _q1.fromArray(t.q);
       if (r.pos.lengthSq() === 0 || r.pos.distanceTo(tp) > 5) { r.pos.copy(tp); r.quat.copy(tq); }
       const k = 1 - Math.exp(-dt * 14);
       r.pos.lerp(tp, k); r.quat.slerp(tq, k);
@@ -611,7 +644,9 @@ export class Game extends Emitter {
         const v = t && !this.mirror ? t.linvel() : null;
         const speed = v ? Math.hypot(v.x, v.y, v.z) : (o._lastH ? new THREE.Vector3(h.x, h.y, h.z).distanceTo(o._lastH) / Math.max(dt, 1e-3) : 1);
         o._lastH = new THREE.Vector3(h.x, h.y, h.z);
-        const held = Object.values(this.sim ? Object.fromEntries([...this.sim.holds].map(([s, x]) => [s, x.objId])) : this.meta.holds || {}).includes(id);
+        let held = false;
+        if (this.sim) { for (const x of this.sim.holds.values()) if (x.objId === id) held = true; }
+        else held = Object.values(this.meta.holds || {}).includes(id);
         this.ragdollRest = speed < 0.35 && !held ? this.ragdollRest + dt : 0;
         if (this.ragdollRest > 2.5 && this.ragdollTime > 1) { this.ragdollRest = -10; this.send({ c: 'recover' }); }
       }
@@ -651,14 +686,19 @@ export class Game extends Emitter {
   }
 }
 
+function disposeRemote(r) {
+  r.visual.dispose();
+  r.label.material.map.dispose();
+  r.label.material.dispose();
+}
+
 function makeLabel(name, color) {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 64;
   const ctx = c.getContext('2d');
   ctx.fillStyle = 'rgba(20,28,40,0.7)';
-  const w = Math.min(250, 30 + ctx.measureText(name).width * 2.2);
   ctx.font = '600 28px "Space Grotesk", sans-serif';
-  const tw = ctx.measureText(name).width + 36;
+  const tw = Math.min(250, ctx.measureText(name).width + 36);
   roundRect(ctx, 128 - tw / 2, 10, tw, 44, 12); ctx.fill();
   ctx.fillStyle = color; ctx.beginPath(); ctx.arc(128 - tw / 2 + 18, 32, 6, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(name, 128 - tw / 2 + 30, 33);
@@ -667,7 +707,6 @@ function makeLabel(name, color) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true }));
   s.scale.set(1.2, 0.3, 1);
   s.position.set(0, 2.1, 0);
-  void w;
   return s;
 }
 function roundRect(ctx, x, y, w, h, r) {

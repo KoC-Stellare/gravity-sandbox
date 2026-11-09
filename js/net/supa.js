@@ -2,7 +2,11 @@
 let createClient;
 export let online = true;
 try {
-  ({ createClient } = await import('supabase'));
+  // The import blocks the whole game from starting, so give a slow or blocked CDN a deadline.
+  ({ createClient } = await Promise.race([
+    import('supabase'),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timed out loading the online library')), 8000)),
+  ]));
 } catch (e) {
   console.warn('Online features unavailable:', e);
   online = false;
@@ -16,7 +20,7 @@ try {
     removeChannel() {},
   });
 }
-import { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL } from '../config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_URL, MAX_OBJECTS } from '../config.js';
 import { Emitter } from '../util.js';
 
 const likeEscape = (s) => s.replace(/[\\%_]/g, (c) => '\\' + c);
@@ -67,8 +71,10 @@ class Account extends Emitter {
 
   async signUp(email, password, username, color) {
     if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) throw new Error('Username: 3–20 letters, numbers or _');
-    const { data: taken } = await supa.from('profiles').select('id').ilike('username', likeEscape(username)).maybeSingle().then((r) => r, () => ({ data: null }));
-    if (taken) throw new Error('That username is taken');
+    // Guests cannot read the profiles table, so the check goes through a database function.
+    // Without this the account would be created with a generated name ("player_1a2b3c4d") when the name is taken.
+    const { data: free } = await supa.rpc('username_available', { uname: username }).then((r) => r, () => ({ data: null }));
+    if (free === false) throw new Error('That username is taken');
     const { data, error } = await supa.auth.signUp({ email, password, options: { data: { username, color }, emailRedirectTo: PUBLIC_URL } });
     if (error) throw error;
     if (!data.session) return { needsConfirm: true };
@@ -94,13 +100,14 @@ class Account extends Emitter {
     if (error) throw error;
   }
 
-  async updateProfile(patch) {
+  /** silent: store it without announcing an account change (background saves such as settings). */
+  async updateProfile(patch, { silent = false } = {}) {
     if (!this.loggedIn) return;
     if (patch.username && !/^[A-Za-z0-9_]{3,20}$/.test(patch.username)) throw new Error('Username: 3–20 letters, numbers or _');
     const { data, error } = await supa.from('profiles').update(patch).eq('id', this.id).select('id, username, color, settings').single();
     if (error) throw new Error(error.code === '23505' ? 'That username is taken' : error.message);
     this.profile = data;
-    this.emit('change');
+    if (!silent) this.emit('change');
   }
 
   // ------------- friends
@@ -150,7 +157,7 @@ class Account extends Emitter {
   }
   async saveMap({ id, name, data }) {
     const object_count = (data.objects || []).length;
-    if (object_count > 100) throw new Error('Max 100 objects');
+    if (object_count > MAX_OBJECTS) throw new Error(`Max ${MAX_OBJECTS} objects`);
     if (id) {
       const { data: row, error } = await supa.from('maps').update({ name, data, object_count }).eq('id', id).select('id').single();
       if (error) throw error;

@@ -1,5 +1,5 @@
 import { supa } from './supa.js';
-import { Emitter, uid, randomCode } from '../util.js';
+import { Emitter, uid, randomCode, safeColor } from '../util.js';
 import { ICE_SERVERS, MAX_PLAYERS } from '../config.js';
 
 /**
@@ -41,8 +41,9 @@ export class Room extends Emitter {
   async openChannel(asHost) {
     this.channel = supa.channel(`room-${this.code}`, { config: { broadcast: { self: false, ack: false }, presence: { key: this.peerId } } });
     this.channel.on('broadcast', { event: 'hello' }, ({ payload }) => this.isHost && this.onHello(payload));
-    this.channel.on('broadcast', { event: 'signal' }, ({ payload }) => payload.to === this.peerId && this.onSignal(payload));
-    this.channel.on('broadcast', { event: 'deny' }, ({ payload }) => payload.to === this.peerId && this.emit('deny', payload.reason));
+    // the signaling channel is public: a bad or hostile message must not surface as an error
+    this.channel.on('broadcast', { event: 'signal' }, ({ payload }) => { if (payload?.to === this.peerId) this.onSignal(payload).catch(() => {}); });
+    this.channel.on('broadcast', { event: 'deny' }, ({ payload }) => payload?.to === this.peerId && this.emit('deny', String(payload.reason || 'The host refused the connection').slice(0, 120)));
     this.channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
       if (!this.isHost && leftPresences.some((p) => p.role === 'host')) this.close('The host left the room');
     });
@@ -67,12 +68,12 @@ export class Room extends Emitter {
 
   // ---------------- host side
   onHello(p) {
-    if (this.peers.has(p.from)) return;
+    if (!p || typeof p.from !== 'string' || p.from.length > 64 || this.peers.has(p.from)) return;
     if (this.peers.size + 1 >= MAX_PLAYERS) { this.signal('deny', { to: p.from, reason: 'Room is full (max ' + MAX_PLAYERS + ' players)' }); return; }
     let slot = 1; while (this.usedSlots.has(slot)) slot++;
     this.usedSlots.add(slot);
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    const peer = { id: p.from, slot, name: String(p.name || 'Player').slice(0, 20), color: p.color, userId: p.userId, pc, rel: null, unrel: null, open: false };
+    const peer = { id: p.from, slot, name: (typeof p.name === 'string' && p.name.trim() ? p.name : 'Player').slice(0, 20), color: safeColor(p.color), userId: typeof p.userId === 'string' ? p.userId.slice(0, 64) : null, pc, rel: null, unrel: null, open: false };
     this.peers.set(p.from, peer);
     peer.rel = pc.createDataChannel('rel', { ordered: true });
     peer.unrel = pc.createDataChannel('unrel', { ordered: false, maxRetransmits: 0 });

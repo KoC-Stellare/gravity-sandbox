@@ -60,7 +60,7 @@ export class GravityVisuals {
       } else v.arrow.visible = false;
       v.mesh.material.uniforms.color.value.set(b.mode === 'zero' || b.s === 0 ? 0x9fe8ff : b.mode === 'out' ? 0xb48cff : COLORS.gravity);
     }
-    for (const [id, v] of this.bubbles) if (!seen.has(id)) { v.g.removeFromParent(); v.mesh.material.dispose(); this.bubbles.delete(id); }
+    for (const [id, v] of this.bubbles) if (!seen.has(id)) { v.g.removeFromParent(); v.mesh.material.dispose(); v.arrow.dispose(); this.bubbles.delete(id); }
 
     // links
     const lseen = new Set();
@@ -84,7 +84,7 @@ export class GravityVisuals {
       pos.setXYZ(0, pa.x, pa.y, pa.z); pos.setXYZ(1, pb.x, pb.y, pb.z); pos.needsUpdate = true;
       v.line.material.opacity = 0.45 + 0.4 * Math.sin(this.time * 6 + l.id);
     }
-    for (const [id, v] of this.links) if (!lseen.has(id)) { v.line.removeFromParent(); v.line.geometry.dispose(); this.links.delete(id); }
+    for (const [id, v] of this.links) if (!lseen.has(id)) { v.line.removeFromParent(); v.line.geometry.dispose(); v.line.material.dispose(); this.links.delete(id); }
 
     // scan & draft
     const s = powers?.scan;
@@ -96,8 +96,8 @@ export class GravityVisuals {
   }
 
   clear() {
-    for (const v of this.bubbles.values()) v.g.removeFromParent();
-    for (const v of this.links.values()) v.line.removeFromParent();
+    for (const v of this.bubbles.values()) { v.g.removeFromParent(); v.mesh.material.dispose(); v.arrow.dispose(); }
+    for (const v of this.links.values()) { v.line.removeFromParent(); v.line.geometry.dispose(); v.line.material.dispose(); }
     this.bubbles.clear(); this.links.clear();
   }
   dispose() { this.clear(); this.group.removeFromParent(); }
