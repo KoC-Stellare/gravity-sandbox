@@ -375,11 +375,17 @@ export class Menu {
 }
 
 export function showInvite(app, payload) {
-  const el = h('div.invite',
-    h('div', h('b', String(payload.from || 'A friend')), ' invited you to room ', h('code', payload.code)),
+  // The inbox channel is public, so treat an invite as untrusted: a real room code, a short name, and no flooding.
+  const box = $('#invites');
+  if (!payload || typeof payload.code !== 'string' || !/^[A-Z0-9]{6}$/.test(payload.code)) return;
+  if ([...box.children].some((c) => c.dataset.code === payload.code)) return;
+  while (box.children.length >= 3) box.firstChild.remove();
+  const from = typeof payload.from === 'string' && payload.from.trim() ? payload.from.slice(0, 20) : 'A friend';
+  const el = h('div.invite', { 'data-code': payload.code },
+    h('div', h('b', from), ' invited you to room ', h('code', payload.code)),
     h('div.row-btns',
       h('button.btn.small.primary', { onclick: () => { el.remove(); app.joinRoom(payload.code); } }, 'Join'),
       h('button.btn.small', { onclick: () => el.remove() }, 'Dismiss')));
-  $('#invites').append(el);
+  box.append(el);
   setTimeout(() => el.remove(), 30000);
 }

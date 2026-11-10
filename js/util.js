@@ -43,6 +43,9 @@ export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
+/** A #rrggbb colour, or the fallback. Colours also arrive from other players and must never carry markup. */
+export const safeColor = (c, fallback = '#4fc3d9') => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : fallback);
+
 /** Tiny event emitter */
 export class Emitter {
   constructor() { this._h = {}; }

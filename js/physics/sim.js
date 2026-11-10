@@ -9,6 +9,8 @@ const _p = new THREE.Vector3();
 const _v = new THREE.Vector3();
 const _f = new THREE.Vector3();
 const STEP = 1 / 120;
+const SLEEP_RESENDS = 3;
+const MAX_STEPS = 12;
 
 /**
  * Gravity field: world gravity, bubbles and per-object overrides.
@@ -91,13 +93,15 @@ export class Sim extends Emitter {
   // ---------- main loop ----------
   update(dt) {
     this.acc += Math.min(dt, 0.1);
+    // Up to MAX_STEPS per frame keeps game time equal to real time down to 10 frames per second
+    // (a slow graphics card, or a hosted room in a hidden tab). Below that the game slows down instead of freezing.
     let steps = 0;
-    while (this.acc >= STEP && steps < 6) {
+    while (this.acc >= STEP && steps < MAX_STEPS) {
       this.fixedStep(STEP);
       this.acc -= STEP;
       steps++;
     }
-    if (steps === 6) this.acc = 0;
+    if (steps === MAX_STEPS) this.acc = 0;
     this.pw.syncAll();
   }
 
@@ -328,6 +332,8 @@ export class Sim extends Emitter {
 
   // ---------- commands ----------
   command(slot, cmd) {
+    cmd = cleanCommand(cmd);
+    if (!cmd) return;
     const pw = this.pw;
     const objs = (ids) => (ids || []).map((id) => pw.objects.get(id)).filter(Boolean);
     switch (cmd.c) {
@@ -352,7 +358,7 @@ export class Sim extends Emitter {
         break;
       }
       case 'worldGrav':
-        this.field.world = { dir: cmd.dir, s: clamp(cmd.s, 0, MAX_G * G_EARTH) };
+        this.field.world = { dir: cmd.dir || this.field.world.dir, s: clamp(cmd.s, 0, MAX_G * G_EARTH) };
         this.wakeAll();
         this.markMeta();
         break;
@@ -374,7 +380,7 @@ export class Sim extends Emitter {
         break;
       }
       case 'linkAdd': {
-        if (!pw.objects.get(cmd.a)) break;
+        if (!pw.objects.get(cmd.a) || (cmd.b != null && !pw.objects.get(cmd.b))) break;
         if (this.links.length >= MAX_LINKS) this.links.shift();
         this.links.push({ id: this.nextLink++, a: cmd.a, b: cmd.b ?? null, point: cmd.point || null, G: clamp(cmd.G, 0.001, 50) });
         objs([cmd.a, cmd.b]).forEach((o) => o.bodies.forEach((b) => b.wakeUp()));
@@ -491,14 +497,96 @@ export class Sim extends Emitter {
     const out = [];
     for (const o of this.pw.objects.values()) {
       o.bodies.forEach((b, i) => {
-        if (!all && b.isSleeping() && o.sentSleep?.[i]) return;
-        (o.sentSleep ||= [])[i] = b.isSleeping();
+        // A resting body is sent a few more times and then skipped: snapshots travel on an
+        // unreliable channel, so a single "final" transform could be lost and leave clients out of place.
+        const rest = (o.sentSleep ||= []);
+        if (b.isSleeping()) {
+          if (!all && rest[i] >= SLEEP_RESENDS) return;
+          rest[i] = (rest[i] || 0) + 1;
+        } else rest[i] = 0;
         const t = b.translation(), r = b.rotation();
         out.push(o.id * 16 + i, t.x, t.y, t.z, r.x, r.y, r.z, r.w);
       });
     }
     return out;
   }
+}
+
+// ---------- command validation ----------
+// Commands also arrive from other players' computers. One NaN (or a missing array) inside the
+// physics engine stops the whole simulation for everyone, so nothing unchecked gets through.
+const LIMIT = 1e4;
+const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
+const isId = (x) => Number.isInteger(x) && x >= 0;
+const vec = (a) => (Array.isArray(a) && isNum(a[0]) && isNum(a[1]) && isNum(a[2])
+  ? [clamp(a[0], -LIMIT, LIMIT), clamp(a[1], -LIMIT, LIMIT), clamp(a[2], -LIMIT, LIMIT)] : null);
+function unit(a) {
+  const v = vec(a);
+  if (!v) return null;
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return l > 1e-6 ? [v[0] / l, v[1] / l, v[2] / l] : null;
+}
+function capped(a, max) {
+  const v = vec(a);
+  if (!v) return null;
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return l > max ? [v[0] * max / l, v[1] * max / l, v[2] * max / l] : v;
+}
+const idList = (a) => (Array.isArray(a) ? a.filter(isId).slice(0, 200) : []);
+const BUBBLE_KINDS = ['zero', 'dir', 'in', 'out'];
+const DOWN = [0, -1, 0];
+
+/** Clean copy of a command, or null when it is malformed. */
+export function cleanCommand(cmd) {
+  if (!cmd || typeof cmd !== 'object') return null;
+  const c = cmd.c;
+  switch (c) {
+    case 'objGrav': {
+      const ids = idList(cmd.ids);
+      if (!ids.length) return null;
+      if (cmd.inherit) return { c, ids, inherit: true, massMul: isNum(cmd.massMul) ? cmd.massMul : undefined };
+      if (!isNum(cmd.s)) return null;
+      const dir = unit(cmd.dir) || (cmd.s === 0 ? DOWN : null);
+      return dir ? { c, ids, dir, s: cmd.s, massMul: isNum(cmd.massMul) ? cmd.massMul : undefined } : null;
+    }
+    case 'objReset': { const ids = idList(cmd.ids); return ids.length ? { c, ids } : null; }
+    case 'worldGrav': return isNum(cmd.s) ? { c, dir: unit(cmd.dir), s: cmd.s } : null;   // no direction: keep the current one
+    case 'bubbleAdd': {
+      const pos = vec(cmd.pos);
+      if (!pos || !isNum(cmd.r) || !isNum(cmd.s) || !BUBBLE_KINDS.includes(cmd.mode)) return null;
+      return { c, pos, r: cmd.r, mode: cmd.mode, dir: unit(cmd.dir) || DOWN, s: cmd.s };
+    }
+    case 'bubbleDel': return isId(cmd.id) ? { c, id: cmd.id } : null;
+    case 'bubbleEdit':
+      if (!isId(cmd.id)) return null;
+      return { c, id: cmd.id, mode: BUBBLE_KINDS.includes(cmd.mode) ? cmd.mode : undefined, dir: unit(cmd.dir) || undefined, s: isNum(cmd.s) ? cmd.s : undefined };
+    case 'linkAdd': {
+      if (!isId(cmd.a) || !isNum(cmd.G)) return null;
+      if (cmd.b != null) return isId(cmd.b) && cmd.b !== cmd.a ? { c, a: cmd.a, b: cmd.b, G: cmd.G } : null;
+      const point = vec(cmd.point);
+      return point ? { c, a: cmd.a, point, G: cmd.G } : null;
+    }
+    case 'linkClear': return isId(cmd.id) ? { c, id: cmd.id } : null;
+    case 'tkGrab':
+      if (cmd.player != null) return isId(cmd.player) ? { c, player: cmd.player } : null;
+      return isId(cmd.id) ? { c, id: cmd.id, target: vec(cmd.target) } : null;
+    case 'tkAim': { const target = vec(cmd.target); return target ? { c, target, rot: capped(cmd.rot, 60) } : null; }
+    case 'tkThrow': { const dir = unit(cmd.dir); return dir ? { c, dir } : null; }
+    case 'tkPush': {
+      const dir = unit(cmd.dir);
+      if (!dir) return null;
+      if (cmd.player != null) return isId(cmd.player) ? { c, player: cmd.player, dir } : null;
+      return isId(cmd.id) ? { c, id: cmd.id, dir } : null;
+    }
+    case 'tkResize': return isId(cmd.id) && isNum(cmd.f) ? { c, id: cmd.id, f: clamp(cmd.f, 0.5, 2) } : null;
+    case 'ragdoll': {
+      const q = Array.isArray(cmd.quat) && cmd.quat.length === 4 && cmd.quat.every(isNum) ? cmd.quat : null;
+      const ql = q ? Math.hypot(q[0], q[1], q[2], q[3]) : 0;
+      return { c, vel: capped(cmd.vel, 40), feet: vec(cmd.feet), quat: ql > 1e-6 ? q.map((x) => x / ql) : null };
+    }
+    case 'tkRelease': case 'resetAll': case 'recover': return { c };
+  }
+  return null;
 }
 
 function addExtra(map, handle, v) {

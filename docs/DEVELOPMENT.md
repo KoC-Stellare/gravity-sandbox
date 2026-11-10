@@ -20,7 +20,7 @@ The Netlify site **sandbox-gravity** is connected to this GitHub repository: eve
 
 To deploy by hand instead: Netlify → **Add new site → Deploy manually** → drag the repository folder (without `desktop/node_modules`).
 
-The files `_redirects` and `_headers` are Netlify settings. Keep them: they make invite links (`/join/CODE`) and map links (`/map/TOKEN`) work and control caching.
+The files `_redirects` and `_headers` are Netlify settings. Keep them: they make invite links (`/join/CODE`) and map links (`/map/TOKEN`) work, control caching, and add basic security headers.
 
 ## Supabase
 
@@ -41,6 +41,21 @@ One-time settings in the Supabase dashboard:
 - Row Level Security is on, with insert-only policies that also require `status = 'new'` and empty handling fields.
 - A trigger rejects new messages when 30 already arrived in the last 60 minutes (error `feedback_rate_limited`). The game also allows one message per player every 20 seconds.
 - `status` (`new`, `in_progress`, `in_review`, `done`, `rejected`, `needs_review`), `result_note`, `pr_url` and `handled_at` are for whoever processes the feedback later. That process must use a server-side key (service role), never the public key.
+
+### Username check
+
+`public.username_available(uname)` (migration `supabase/migrations/20261109_username_available.sql`) answers yes or no to "is this username free?". The sign-up form calls it because visitors without an account cannot read the `profiles` table.
+
+## Tests
+
+Browser tests live in `tests/` and need [Playwright](https://playwright.dev) with Chromium:
+
+```
+node tests/run.mjs       # the game: solo, movement, hostile input, editor, a two-player room
+node tests/offline.mjs   # the offline cache
+```
+
+They start their own local server and replace Supabase with a stand-in, so they never touch the real database. Details are in `tests/README.md`.
 
 ## Desktop app (`desktop/`)
 
@@ -89,6 +104,7 @@ _redirects, _headers   Netlify settings
 desktop/               desktop app for Windows and Linux (Electron)
 .github/workflows/     builds the desktop app on GitHub
 supabase/              database schema and migrations
+tests/                 browser tests (not part of the game)
 docs/                  this guide and README screenshots
 ```
 

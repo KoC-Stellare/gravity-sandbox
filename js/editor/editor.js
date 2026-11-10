@@ -60,8 +60,15 @@ export class Editor extends Emitter {
 
   // ---------------------------------------------------------- items
   clearItems() {
-    for (const it of this.items || []) { it.mesh.removeFromParent(); if (it.mesh.geometry && !it.shared) it.mesh.geometry.dispose(); }
+    for (const it of this.items || []) this.disposeMesh(it);
     this.items = [];
+    this.select(null);
+  }
+  /** Remove an item's mesh and free its GPU buffers (mannequin parts share cached geometry and keep it). */
+  disposeMesh(item) {
+    item.mesh.removeFromParent();
+    item.mesh.geometry?.dispose();
+    if (item.data.invisible) item.mesh.material?.dispose();
   }
   rebuildAll() {
     this.clearItems();
@@ -110,7 +117,7 @@ export class Editor extends Emitter {
 
   refreshItem(item) {
     const idx = this.items.indexOf(item);
-    item.mesh.removeFromParent();
+    this.disposeMesh(item);
     this.items.splice(idx, 1);
     const n = this.makeItem(item.kind, item.data);
     if (this.selected === item) this.select(n);
@@ -121,14 +128,14 @@ export class Editor extends Emitter {
     const arr = item.kind === 'static' ? this.map.statics : this.map.objects;
     const i = arr.indexOf(item.data);
     if (i >= 0) arr.splice(i, 1);
-    item.mesh.removeFromParent();
+    this.disposeMesh(item);
     this.items = this.items.filter((x) => x !== item);
     if (this.selected === item) this.select(null);
     this.changed();
   }
 
   select(item) {
-    if (this.selHelper) { this.selHelper.removeFromParent(); this.selHelper = null; }
+    if (this.selHelper) { this.selHelper.removeFromParent(); this.selHelper.dispose(); this.selHelper = null; }
     this.selected = item;
     if (item) {
       this.selHelper = new THREE.BoxHelper(item.mesh, COLORS.gravity);

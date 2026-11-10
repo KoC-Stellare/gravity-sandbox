@@ -201,6 +201,7 @@ export class PhysicsWorld {
     obj.mesh.castShadow = true; obj.mesh.receiveShadow = true;
     obj.mesh.userData.objId = obj.id;
     obj.edges = null;
+    obj._hl = 0;               // the new mesh starts without highlight: let the powers re-apply it
     this.root.add(obj.mesh);
     obj.lastF = [];
     this.syncObject(obj);

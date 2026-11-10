@@ -141,4 +141,4 @@ grant select, insert, update (name, data, object_count), delete on public.maps t
 grant select, insert, delete on public.map_links to authenticated;
 grant select, insert, delete on public.map_shares to authenticated;
 
--- Later changes are in supabase/migrations/ (feedback table, extra indexes).
+-- Later changes are in supabase/migrations/ (feedback table, extra indexes, username_available).

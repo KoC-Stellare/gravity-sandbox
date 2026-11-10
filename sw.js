@@ -1,5 +1,5 @@
 // Gravity SandBox service worker: makes the game installable and caches the app + libraries.
-const VERSION = 'gs-v1.3.0';
+const VERSION = 'gs-v1.3.1';
 const SHELL = [
   '/play', '/play.html', '/css/style.css', '/lib/three.module.js', '/lib/BufferGeometryUtils.js', '/lib/rapier.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png',
   '/js/main.js', '/js/config.js', '/js/util.js', '/js/game.js',
@@ -12,6 +12,7 @@ const SHELL = [
   '/js/net/supa.js', '/js/net/room.js', '/js/net/social.js',
   '/js/ui/dom.js', '/js/ui/hud.js', '/js/ui/menu.js', '/js/ui/chat.js', '/js/ui/powerpanel.js', '/js/ui/help.js', '/js/ui/tutorial.js', '/js/ui/feedback.js',
 ];
+const SHELL_PATHS = new Set(SHELL);
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -32,21 +33,28 @@ self.addEventListener('fetch', (e) => {
       const hit = await c.match(req);
       if (hit) return hit;
       const res = await fetch(req);
-      if (res.ok || res.type === 'opaque') c.put(req, res.clone());
+      if (res.ok || res.type === 'opaque') c.put(req, res.clone()).catch(() => {});
       return res;
     }));
     return;
   }
   if (url.origin !== location.origin) return;
+  // Video seeking asks for pieces of a file; those cannot be stored, so the browser handles them itself.
+  if (req.headers.has('range')) return;
   // pages: network first (so updates arrive), fall back to cache
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).catch(async () => (await caches.match(req)) || caches.match('/play.html')));
     return;
   }
-  // app files: stale-while-revalidate
+  // Only the game's own files (the list above) are kept for offline play. Anything else on the site
+  // (pictures, videos, documents) goes straight to the network and the browser's normal cache.
+  if (!SHELL_PATHS.has(url.pathname)) return;
+  // game files: answer from the cache at once, refresh the copy in the background
   e.respondWith(caches.open(VERSION).then(async (c) => {
     const hit = await c.match(req);
-    const net = fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => hit);
-    return hit || net;
+    const net = fetch(req).then((res) => { if (res.status === 200) c.put(req, res.clone()).catch(() => {}); return res; });
+    if (!hit) return net;
+    net.catch(() => {});
+    return hit;
   }));
 });

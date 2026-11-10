@@ -2,7 +2,19 @@ import * as THREE from 'three';
 import { h, $, clear } from './dom.js';
 import { POWERS, DIR_MODES } from '../powers/powers.js';
 import { settings, keyLabel } from '../core/settings.js';
-import { fmtG, escapeHtml } from '../util.js';
+import { fmtG, escapeHtml, safeColor } from '../util.js';
+
+/** innerHTML, but only when it changed: the HUD is rebuilt every frame and is almost always identical. */
+function setHtml(el, html) {
+  if (el._html === html) return;
+  el._html = html;
+  el.innerHTML = html;
+}
+function setClass(el, cls) {
+  if (el._cls === cls) return;
+  el._cls = cls;
+  el.className = cls;
+}
 import { MAX_OBJECTS, PUBLIC_URL } from '../config.js';
 
 /** In-game heads-up display. */
@@ -14,9 +26,10 @@ export class Hud {
     this.target = h('div.target-info');
     this.bar = h('div.power-bar');
     this.barSlots = POWERS.map((p, i) => {
-      const el = h('div.slot', h('kbd', i + 1), h('span.ic', p.icon), h('span.nm', p.short));
+      const key = h('kbd', i + 1);
+      const el = h('div.slot', key, h('span.ic', p.icon), h('span.nm', p.short));
       this.bar.append(el);
-      return el;
+      return { el, key };
     });
     this.powerDetail = h('div.power-detail');
     this.compassCanvas = h('canvas.compass', { width: 150, height: 150 });
@@ -58,46 +71,50 @@ export class Hud {
     // fps
     this.frames++; this.fpsTime += dt;
     if (this.fpsTime > 0.5) { this.fps.textContent = Math.round(this.frames / this.fpsTime) + ' FPS'; this.frames = 0; this.fpsTime = 0; }
-    this.fps.style.display = settings.get('showFps') ? '' : 'none';
+    const showFps = !!settings.get('showFps');
+    if (showFps !== this._showFps) { this._showFps = showFps; this.fps.style.display = showFps ? '' : 'none'; }
     if (this.tipTimer > 0) { this.tipTimer -= dt; if (this.tipTimer <= 0) this.hideTip(); }
     if (this.flashTimer > 0) { this.flashTimer -= dt; if (this.flashTimer <= 0) this.flashEl.classList.remove('show'); }
 
     // power bar
-    this.barSlots.forEach((el, i) => {
-      el.classList.toggle('active', i === pw.index);
-      el.querySelector('kbd').textContent = keyLabel(settings.get('bindings')[POWERS[i].key]);
+    const keys = settings.get('bindings');
+    this.barSlots.forEach((s, i) => {
+      setClass(s.el, i === pw.index ? 'slot active' : 'slot');
+      const label = keyLabel(keys[POWERS[i].key]);
+      if (s.label !== label) { s.label = label; s.key.textContent = label; }
     });
     const p = pw.power;
-    this.powerDetail.innerHTML = `<b>${p.name}</b> <span>${this.powerSummary(pw)}</span><em>${p.hint}</em>`;
+    setHtml(this.powerDetail, `<b>${p.name}</b> <span>${this.powerSummary(pw)}</span><em>${p.hint}</em>`);
 
     // crosshair state
     const info = pw.targetInfo();
     const tk = p.id === 'tk';
-    this.crosshair.className = 'crosshair' + (info ? ' on' : '') + (tk ? ' tk' : '') + (pw.hold ? ' hold' : '');
+    setClass(this.crosshair, 'crosshair' + (info ? ' on' : '') + (tk ? ' tk' : '') + (pw.hold ? ' hold' : ''));
     if (info) {
-      this.target.innerHTML = `<b>${escapeHtml(info.name)}</b>` + info.lines.map((l) => `<span>${escapeHtml(l)}</span>`).join('') +
-        (info.heavy && tk ? '<span class="warn">too heavy to lift</span>' : '');
-      this.target.classList.add('show');
-    } else this.target.classList.remove('show');
+      setHtml(this.target, `<b>${escapeHtml(info.name)}</b>` + info.lines.map((l) => `<span>${escapeHtml(l)}</span>`).join('') +
+        (info.heavy && tk ? '<span class="warn">too heavy to lift</span>' : ''));
+    }
+    setClass(this.target, info ? 'target-info show' : 'target-info');
 
     // counters
     const nObj = game.pw.countDynamic();
-    this.counters.innerHTML = `<span>Objects <b>${nObj}/${MAX_OBJECTS}</b></span><span>Bubbles <b>${game.field.bubbles.length}</b></span><span>Links <b>${game.links().length}</b></span>`;
+    setHtml(this.counters, `<span>Objects <b>${nObj}/${MAX_OBJECTS}</b></span><span>Bubbles <b>${game.field.bubbles.length}</b></span><span>Links <b>${game.links().length}</b></span>`);
 
     // held
     if (pw.hold) {
       const heavy = game.tooHeavy();
-      this.heldBar.innerHTML = `Holding · ${pw.cfg.tk.dist.toFixed(1)} m${heavy ? ' · <b class="warn">too heavy</b>' : ''} <em>wheel distance · ${keyLabel(settings.get('bindings').rotate)} rotate · RMB throw</em>`;
-      this.heldBar.classList.add('show');
-    } else this.heldBar.classList.remove('show');
+      setHtml(this.heldBar, `Holding · ${pw.cfg.tk.dist.toFixed(1)} m${heavy ? ' · <b class="warn">too heavy</b>' : ''} <em>wheel distance · ${keyLabel(keys.rotate)} rotate · RMB throw</em>`);
+    }
+    setClass(this.heldBar, pw.hold ? 'held-bar show' : 'held-bar');
 
     // room panel
     if (game.net) {
       const players = game.playerList();
-      this.room.innerHTML = `<div class="code">ROOM <b>${game.net.code}</b></div>` + players.map((pl) =>
-        `<div class="pl"><i style="background:${pl.color}"></i>${escapeHtml(pl.name)}${pl.host ? ' <small>host</small>' : ''}${pl.me ? ' <small>you</small>' : ''}</div>`).join('');
-      this.room.style.display = '';
-    } else this.room.style.display = 'none';
+      setHtml(this.room, `<div class="code">ROOM <b>${escapeHtml(game.net.code)}</b></div>` + players.map((pl) =>
+        `<div class="pl"><i style="background:${safeColor(pl.color)}"></i>${escapeHtml(pl.name)}${pl.host ? ' <small>host</small>' : ''}${pl.me ? ' <small>you</small>' : ''}</div>`).join(''));
+    }
+    const roomShown = !!game.net;
+    if (roomShown !== this._roomShown) { this._roomShown = roomShown; this.room.style.display = roomShown ? '' : 'none'; }
 
     this.drawCompass(game);
   }
@@ -150,14 +167,17 @@ export class Hud {
     arrow(wv, '#ffffff', 50);
     const pg = game.player.gravity;
     arrow(pg, '#35d0e6', 38);
-    this.compassText.innerHTML = `<span class="w">World ${fmtG(w.s)}</span><span class="p">You ${fmtG(pg.length())}${game.player.personalG ? ' · surface' : ''}</span>`;
+    setHtml(this.compassText, `<span class="w">World ${fmtG(w.s)}</span><span class="p">You ${fmtG(pg.length())}${game.player.personalG ? ' · surface' : ''}</span>`);
   }
 
   /** Tab list */
   showPlayers(show, game) {
-    this.playersList.classList.toggle('show', !!show);
+    if (!!show !== this._playersShown) { this._playersShown = !!show; this.playersList.classList.toggle('show', !!show); }
     if (!show) return;
     const list = game.playerList();
+    const sig = JSON.stringify([game.net?.code, list]);
+    if (sig === this._playersSig) return;   // held every frame while Tab is down: rebuild only when the list changes
+    this._playersSig = sig;
     clear(this.playersList).append(
       h('h4', game.net ? `Room ${game.net.code}` : 'Singleplayer'),
       ...list.map((p) => h('div.row', h('i', { style: { background: p.color } }), p.name, p.host ? h('small', 'host') : null)),
