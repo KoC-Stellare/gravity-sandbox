@@ -1,7 +1,7 @@
 // Gravity SandBox service worker: makes the game installable and caches the app + libraries.
-const VERSION = 'gs-v1.2.1';
+const VERSION = 'gs-v1.3.1';
 const SHELL = [
-  '/', '/index.html', '/css/style.css', '/lib/three.module.js', '/lib/BufferGeometryUtils.js', '/lib/rapier.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png',
+  '/play', '/play.html', '/css/style.css', '/lib/three.module.js', '/lib/BufferGeometryUtils.js', '/lib/rapier.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png',
   '/js/main.js', '/js/config.js', '/js/util.js', '/js/game.js',
   '/js/core/input.js', '/js/core/settings.js',
   '/js/render/renderer.js', '/js/render/materials.js',
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (e) => {
   if (req.headers.has('range')) return;
   // pages: network first (so updates arrive), fall back to cache
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(() => caches.match('/index.html')));
+    e.respondWith(fetch(req).catch(async () => (await caches.match(req)) || caches.match('/play.html')));
     return;
   }
   // Only the game's own files (the list above) are kept for offline play. Anything else on the site

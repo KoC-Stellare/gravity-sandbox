@@ -4,8 +4,9 @@
 
 Gravity SandBox is a free first-person physics sandbox. Every object has its own gravity, and you control it: make a crate fall upward, switch off gravity for the whole room, walk across the ceiling, drop bubbles of zero-g or throw furniture with telekinesis. Play alone, or invite up to four friends and break physics together.
 
-▶ **Play in your browser:** <https://sandbox-gravity.netlify.app>
-⬇ **Download for Windows or Linux:** [latest release](https://github.com/KoC-Stellare/gravity-sandbox/releases/latest)
+▶ **Website:** <https://sandbox-gravity.netlify.app>
+🎮 **Play in your browser:** <https://sandbox-gravity.netlify.app/play>
+⬇ **Download for Windows or Linux:** <https://sandbox-gravity.netlify.app/download>
 
 ![Gravity switched off in The Lab: crates, barrels and balls float in the air](docs/screenshot-zero-g.webp)
 
@@ -59,7 +60,7 @@ Every power works on everything: crates, furniture, bubbles and other players (g
 
 ### In the browser (Windows, macOS, Linux)
 
-1. Open <https://sandbox-gravity.netlify.app> in a recent **Chrome, Edge or Firefox** on a desktop computer.
+1. Open <https://sandbox-gravity.netlify.app/play> in a recent **Chrome, Edge or Firefox** on a desktop computer.
 2. Click the game to capture the mouse, and play. No account is needed for singleplayer.
 3. Optional: in Chrome or Edge, click the **Install** icon at the right of the address bar to open it in its own window like an app.
 

@@ -75,7 +75,7 @@ class Account extends Emitter {
     // Without this the account would be created with a generated name ("player_1a2b3c4d") when the name is taken.
     const { data: free } = await supa.rpc('username_available', { uname: username }).then((r) => r, () => ({ data: null }));
     if (free === false) throw new Error('That username is taken');
-    const { data, error } = await supa.auth.signUp({ email, password, options: { data: { username, color }, emailRedirectTo: PUBLIC_URL } });
+    const { data, error } = await supa.auth.signUp({ email, password, options: { data: { username, color }, emailRedirectTo: `${PUBLIC_URL}/play` } });
     if (error) throw error;
     if (!data.session) return { needsConfirm: true };
     this.session = data.session;
@@ -96,7 +96,7 @@ class Account extends Emitter {
     this.emit('change');
   }
   async resetPassword(email) {
-    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: PUBLIC_URL });
+    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: `${PUBLIC_URL}/play` });
     if (error) throw error;
   }
 

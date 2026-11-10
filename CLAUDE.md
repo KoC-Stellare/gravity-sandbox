@@ -2,7 +2,12 @@
 
 First-person gravity + telekinesis sandbox, a static web app (PWA) for desktop browsers. English UI.
 Hosting: Netlify (static, this folder is the site root). Backend: Supabase project `gravity-sanbox`
-(ref `mhtxnmknuexraimyrjtq`, region eu-central-1). No build step: plain ES modules + an import map in `index.html`.
+(ref `mhtxnmknuexraimyrjtq`, region eu-central-1). No build step: plain ES modules + an import map in `play.html`.
+
+## Website
+- `/` = `index.html` presentation page, `/download` = `download.html`, `/play` = `play.html` (the game). `_redirects` sends `/join/*` and `/map/*` to `play.html`; after routing the game replaces the URL with `/play`. Auth email redirects go to `PUBLIC_URL + '/play'`.
+- Website pages use `css/site.css` + `js/site.js` only (no game code). Screenshots in `img/` and clips in `video/` (H.264 MP4, 30 fps, 1280×720) were made by driving the real game headlessly: take over `game.update`/`renderer.render`, script camera + `sim.command(...)` per frame, step `sim.update(1/30)`, grab `canvas.toDataURL` and encode with ffmpeg (SwiftShader is too slow for real-time capture). Home page has a light/dark theme (system default, toggle saved in localStorage `gs-theme`), scroll reveal (off with reduced motion), power videos load only when selected and on screen.
+- Download buttons link to `github.com/KoC-Stellare/gravity-sandbox/releases/latest/download/GravitySandBox-Setup.exe` / `GravitySandBox-Windows.zip` / `GravitySandBox-Linux.AppImage` (fixed names set in `desktop/package.json`). A release only exists after pushing a `v*` tag.
 
 ## Decisions agreed with the owner
 - Sandbox, no levels. 4 default maps: The Lab + The Apartment (closed rooms), The Yard + The Atrium (open sky with an invisible ceiling/walls from `map.bounds`).
@@ -27,7 +32,7 @@ Hosting: Netlify (static, this folder is the site root). Backend: Supabase proje
 - Feedback UI: `js/ui/feedback.js` (main menu link + pause menu button), `sendFeedback()` in `js/net/supa.js` (insert only, never `.select()`), honeypot field, 20 s client cooldown. `Input.suspend(on)` in `js/core/input.js` makes the game ignore keys/mouse and releases pointer lock while a form is open.
 
 ## Desktop app (`desktop/`)
-- Electron wrapper, no changes to the game code needed: `desktop/main.js` serves the site folder on the private scheme `app://gravity/` (SPA fallback like `_redirects`) and rewrites `index.html` to use bundled copies of Supabase JS and the fonts (`desktop/scripts/vendor.mjs` → `desktop/vendor/`, generated, gitignored). Service worker is skipped (only registers on https).
+- Electron wrapper, no changes to the game code needed: `desktop/main.js` serves the site folder on the private scheme `app://gravity/` (SPA fallback like `_redirects`) and rewrites `play.html` (served for every extensionless path) to use bundled copies of Supabase JS and the fonts (`desktop/scripts/vendor.mjs` → `desktop/vendor/`, generated, gitignored). Service worker is skipped (only registers on https).
 - Links/auth redirects use `PUBLIC_URL` from `js/config.js` (= page origin on the web, `SITE_URL` in the app). Never use `location.origin` for shareable links.
 - Builds via GitHub Actions (`.github/workflows/desktop.yml`): windows-latest (NSIS + zip) and ubuntu-latest (AppImage); runs on PRs touching `desktop/`, on demand (workflow_dispatch) and on `v*` tags, where a separate job publishes one Release with fixed file names `GravitySandBox-Setup.exe`, `GravitySandBox-Windows.zip`, `GravitySandBox-Linux.AppImage`. No Mac build (owner's decision). Steam integration not done yet (planned: steamworks.js).
 - The packaged app checks `releases/latest` on GitHub at startup and offers the download when a newer version exists ("Skip this version" is saved in `window.json` in userData).
@@ -39,7 +44,7 @@ Cloud sessions for this repo use the personal environment "gravity-sandbox", whi
 
 ## Docs and branches
 - `README.md` is the public presentation of the project; developer/deploy instructions are in `docs/DEVELOPMENT.md` (screenshots in `docs/`).
-- Branch `website` (PR #2) holds the new website (presentation `index.html`, `download.html`, game moved to `play.html`, version 1.3.0). The owner wants it kept separate from `main` until they decide to publish; keep it merged up with `main`.
+- Branch `website` (PR #2) holds the new website (presentation `index.html`, `download.html`, game moved to `play.html`, version 1.3.1). The owner wants it kept separate from `main` until they decide to publish; keep it merged up with `main`.
 
 ## Deploy
 Drag the folder onto Netlify (or connect this repo). `_redirects` makes `/join/CODE` and `/map/TOKEN` work. Supabase Auth Site URL + redirect URL must be the Netlify address. Bump `VERSION` in `sw.js`, `js/config.js` and `version` in `desktop/package.json` (+ the two top entries of `desktop/package-lock.json`) on each release so the PWA cache refreshes. The service worker only caches the files in its `SHELL` list: add every new game file there. `_headers` also sets `nosniff`, `Referrer-Policy` and `X-Frame-Options: SAMEORIGIN` for the whole site.
