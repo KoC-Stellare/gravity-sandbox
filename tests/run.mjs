@@ -231,6 +231,12 @@ try {
     return open && !document.querySelector('.feedback-wrap') && !__gs.input.suspended;
   });
   ok('feedback: panel opens and closes', fb);
+  // after sending, Esc still closes the panel and never reaches the game's own Esc handler
+  await solo.evaluate(() => { document.querySelector('.fb-link').click(); document.querySelector('#fb-text').value = 'test message from the test suite'; document.querySelector('.feedback button[type=submit]').click(); });
+  await solo.waitForFunction(() => /Thanks/.test(document.querySelector('.fb-status')?.textContent || ''), null, { timeout: 5000 });
+  await solo.keyboard.press('Escape');
+  const fbEsc = await solo.evaluate(() => ({ open: !!document.querySelector('.feedback-wrap'), suspended: __gs.input.suspended, focus: document.activeElement?.id || document.activeElement?.tagName }));
+  ok('feedback: Esc closes the panel after sending', !fbEsc.open && !fbEsc.suspended, JSON.stringify(fbEsc));
   await ctx.close();
 
   // ------------------------------------------------------------------ MULTIPLAYER

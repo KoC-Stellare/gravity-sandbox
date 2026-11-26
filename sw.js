@@ -1,5 +1,5 @@
 // Gravity SandBox service worker: makes the game installable and caches the app + libraries.
-const VERSION = 'gs-v1.2.1';
+const VERSION = 'gs-v1.2.2';
 const SHELL = [
   '/', '/index.html', '/css/style.css', '/lib/three.module.js', '/lib/BufferGeometryUtils.js', '/lib/rapier.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png',
   '/js/main.js', '/js/config.js', '/js/util.js', '/js/game.js',

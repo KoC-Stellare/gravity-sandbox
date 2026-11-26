@@ -37,7 +37,7 @@ class App {
       if (g.mode === 'play' && !g.panel.open && !g.chat.typing) g.resume();
     });
     window.addEventListener('keydown', (e) => {
-      if (e.code !== 'Escape') return;
+      if (e.code !== 'Escape' || this.input.suspended) return;   // a form (Feedback) handles its own Esc
       if (this.game.panel.open) { this.game.closePanel(); return; }
       if (this.game.paused && this.game.mode === 'play') this.game.resume();
     });
