@@ -62,6 +62,8 @@ export function openFeedback(app) {
     } finally {
       send.disabled = false;
       send.textContent = 'Send';
+      // disabling the button dropped focus to <body>: keys (Esc) would no longer reach the panel
+      if (wrap.isConnected) text.focus();
     }
   });
   function done() {
